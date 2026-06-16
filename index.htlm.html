@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyección de caja · Standard69 · 2º semestre 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --text:#16212B;--soft:#4A5763;--bg:#EBEEF2;--card:#FFFFFF;--line:#D9DFE6;
+    --blue:#275A86;--deep:#1B3A57;--green:#1E8A5B;--red:#BE4733;--gold:#B0842F;
+    --frame:#2E5CA0;
+    --greenbg:#E6F2EC;--redbg:#F6E7E3;--amberbg:#F7EEDC;--bluebg:#E7EFF5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 18px 90px}
+  .hero{background:radial-gradient(130% 95% at 50% -12%,rgba(126,176,238,.5),transparent 58%),linear-gradient(178deg,#2E63B8 0%,#235398 32%,#163E7C 64%,#0E2856 100%);color:#fff;border-radius:0 0 22px 22px;padding:42px 18px 36px;margin-bottom:24px}
+  .hero-in{max-width:980px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#E7CF92;font-weight:600;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:22px;height:2px;background:var(--gold);display:inline-block}
+  .hero h1{font-family:'Spectral',serif;font-weight:600;font-size:30px;line-height:1.12;margin:13px 0 6px}
+  .hero p{color:#CFDDEE;max-width:640px;margin:0;font-size:14px}
+  .eye{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600;display:flex;align-items:center;gap:9px;margin:30px 0 12px}
+  .eye::before{content:"";width:20px;height:2px;background:var(--gold);display:inline-block}
+  .card{background:var(--card);border:1.5px solid var(--frame);border-radius:16px;padding:20px}
+  .card h2{font-family:'Spectral',serif;font-weight:600;font-size:18px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:var(--soft);margin:0 0 14px}
+  label.f{display:block;font-size:11.5px;color:var(--soft);font-weight:500;margin-bottom:4px}
+  input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);background:#fff;text-align:right}
+  input:focus{outline:none;border-color:var(--frame);box-shadow:0 0 0 3px rgba(46,92,160,.14)}
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th,td{padding:6px 7px;text-align:right;white-space:nowrap}
+  thead th{font-weight:600;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);border-bottom:2px solid var(--line)}
+  td.l,th.l{text-align:left}
+  .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+  .calc{background:#F4F6F8;color:var(--soft)}
+  .scr{overflow-x:auto}
+  .tabs{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+  .tabs button{border:0;background:#fff;color:var(--soft);padding:8px 15px;font-family:'Inter';font-size:12.5px;font-weight:600;cursor:pointer}
+  .tabs button.on{background:var(--deep);color:#fff}
+  .tabs.sm button{padding:6px 12px;font-size:12px}
+  .pill{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600}
+  .pv{background:var(--bluebg);color:var(--blue)}
+  .pf{background:#EDEEF0;color:var(--soft)}
+  .pg{background:var(--greenbg);color:var(--green)}
+  .pw{background:var(--amberbg);color:#8A6516}
+  .pd{background:var(--redbg);color:var(--red)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .kpi{border:1.5px solid var(--frame);border-radius:13px;padding:14px 16px;background:#fff}
+  .kpi .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);font-weight:600}
+  .kpi .v{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:11px;color:var(--soft);margin-top:2px}
+  .pos{color:var(--green)}.neg{color:var(--red)}
+  .gridc{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px 16px}
+  .btn{border:1px solid var(--frame);background:#fff;color:var(--blue);border-radius:9px;padding:8px 14px;font-family:'Inter';font-size:12.5px;font-weight:600;cursor:pointer}
+  .btn:hover{background:#F1F5FA}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .note{font-size:12px;color:var(--soft);line-height:1.6}
+  .fin td{border-top:2px solid var(--line);font-weight:600}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="hero"><div class="hero-in">
+  <div class="eyebrow">Flujo de caja · Jul – Dic 2026</div>
+  <h1>Proyección de caja · Standard69</h1>
+</div></div>
+
+<div class="wrap">
+
+  <div class="row" style="justify-content:space-between;margin:14px 0 4px;gap:10px;flex-wrap:wrap">
+    <div class="row">
+      <span id="nubeEstado" class="pill pf">Conectando…</span>
+      <button class="btn" id="btnEditar">Editar</button>
+    </div>
+    <div class="row">
+      <input type="text" id="verNombre" placeholder="Nombre de versión" style="text-align:left;width:150px">
+      <button class="btn" id="btnGuardarVer">Guardar versión</button>
+      <select id="verSelect" class="btn" style="color:var(--text)"><option value="">Cargar versión…</option></select>
+    </div>
+  </div>
+
+  <div class="row" style="justify-content:space-between;margin-bottom:6px">
+    <div class="row">
+      <span class="note" style="font-weight:600;color:var(--text)">Escenario activo:</span>
+      <div class="tabs sm" id="scenTabs">
+        <button data-s="pes">Pesimista</button>
+        <button data-s="mod" class="on">Moderado</button>
+        <button data-s="opt">Optimista</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" id="btnExport">Guardar datos (JSON)</button>
+      <button class="btn" id="btnImport">Cargar</button>
+      <input type="file" id="fileImport" accept="application/json" style="display:none">
+    </div>
+  </div>
+
+  <div class="eye">Parámetros generales</div>
+  <div class="card"><div class="gridc" id="globals"></div></div>
+
+  <div class="eye">Datos históricos y real · por local</div>
+  <div class="card">
+    <p class="sub">Cargás facturación y cubiertos. El cubierto promedio y el ajustado se calculan solos (ajustado = promedio × inflación, para traerlo a pesos de hoy). El real se carga al cerrar cada mes; no toca el estimado.</p>
+    <div class="row" style="margin-bottom:12px"><div class="tabs sm" id="localTabs"></div></div>
+    <div class="scr"><div id="localPanel"></div></div>
+    <div style="margin-top:14px"><label class="f">Inflación interanual aplicada por mes (%) — trae el cubierto histórico a pesos de hoy</label>
+      <div class="scr" id="infRow"></div>
+    </div>
+  </div>
+
+  <div class="eye">Perillas del escenario <span class="pill pv scen-tag" id="scenLbl" style="margin-left:4px">Moderado</span></div>
+  <div class="card">
+    <p class="sub">Variación de cubiertos (Q) y de ticket real (P) respecto del histórico, por local. Cambiá el escenario activo arriba para editar cada uno.</p>
+    <div class="scr"><table>
+      <thead><tr><th class="l">Local</th><th>Δ Cubiertos (Q) %</th><th>Δ Ticket (P) %</th></tr></thead>
+      <tbody id="knobsBody"></tbody>
+    </table></div>
+    <div style="margin-top:12px"><label class="f">Ajuste de CMV por escenario (puntos %, se suma al CMV base de cada local)</label>
+      <div class="row" id="cmvStressRow"></div>
+    </div>
+  </div>
+
+  <div class="eye">Estructura de costos · por local</div>
+  <div class="card">
+    <p class="sub">CMV, regalías, impuestos y mantenimiento como % de ventas (variables). Sueldos, alquiler y servicios fijos en pesos por mes.</p>
+    <div class="scr"><table><thead><tr><th class="l">Concepto</th><th>Warcalde</th><th>Güemes</th><th>Capke</th><th class="l">Tipo</th></tr></thead>
+    <tbody id="costBody"></tbody></table></div>
+  </div>
+
+  <div class="eye">Deuda · calendario de vencimientos</div>
+  <div class="card">
+    <p class="sub">Fisco y banco en pesos. Inversores en USD (se convierten al TC real del escenario). El interés va al económico; capital + interés van a la caja.</p>
+    <div class="scr"><table><thead><tr><th class="l">Concepto</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th></tr></thead>
+    <tbody id="debtBody"></tbody></table></div>
+  </div>
+
+  <div class="eye">Resultado del escenario <span class="pill pv scen-tag">Moderado</span></div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="eye">Calendario integral · ¿la caja cubre el vencimiento? <span class="pill pv scen-tag">Moderado</span></div>
+  <div class="card">
+    <div class="scr"><table><thead><tr><th class="l">Mes</th><th>Caja generada</th><th>Vto inversores</th><th>Caja acumulada</th><th class="l">¿Cubre?</th></tr></thead>
+    <tbody id="integralBody"></tbody></table></div>
+    <p class="note" id="integralNote" style="margin-top:10px"></p>
+  </div>
+
+  <div class="eye">Curva de caja acumulada · 3 escenarios + real</div>
+  <div class="card"><div style="position:relative;height:260px"><canvas id="chart"></canvas></div></div>
+
+  <div class="eye">Los dos estados <span class="pill pv scen-tag">Moderado</span></div>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <span class="note" style="font-weight:600;color:var(--text)">Vista:</span>
+      <div class="tabs sm" id="viewTabs">
+        <button data-v="cons" class="on">Consolidado</button>
+        <button data-v="Warcalde">Warcalde</button>
+        <button data-v="Güemes">Güemes</button>
+        <button data-v="Capke">Capke</button>
+      </div>
+    </div>
+    <h2 style="font-size:15px">Estado económico (devengado)</h2>
+    <div class="scr" style="margin-bottom:18px"><table><thead><tr><th class="l">$ M</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th><th>Sem.</th></tr></thead><tbody id="econBody"></tbody></table></div>
+    <h2 style="font-size:15px">Flujo de caja (percibido)</h2>
+    <div class="scr"><table><thead><tr><th class="l">$ M</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th><th>Sem.</th></tr></thead><tbody id="cashBody"></tbody></table></div>
+  </div>
+
+  <div class="eye">Estimado vs real · desvío</div>
+  <div class="card">
+    <p class="sub">El estimado queda congelado (escenario activo). Al cerrar cada mes cargás el real arriba y acá ves el desvío.</p>
+    <div class="scr"><table><thead><tr><th class="l">Mes</th><th>Fact. estimada</th><th>Fact. real</th><th>Cub. estim.</th><th>Cub. real</th><th>Desvío fact.</th></tr></thead>
+    <tbody id="desvioBody"></tbody></table></div>
+  </div>
+
+</div>
+
+<script>
+const LOCALS=['Warcalde','Güemes','Capke'];
+const MESES=['Jul','Ago','Sep','Oct','Nov','Dic'];
+const M=1e6;
+function fmtAR(n,dec){dec=dec||0;if(n==null||n==='')return '';return Number(n).toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+function parseAR(s){if(s==null)return null;s=(''+s).trim();if(s==='')return null;s=s.replace(/\./g,'').replace(',','.').replace(/[^0-9.\-]/g,'');if(s===''||s==='-'||s==='.')return null;const n=parseFloat(s);return isNaN(n)?null:n;}
+const fmtM=v=>(v<0?'-':'')+'$'+fmtAR(Math.abs(v)/M,1)+'M';
+const fmtP=v=>'$'+fmtAR(v,0);
+const fmtN=v=>fmtAR(v,0);
+
+let state={
+  cajaIni:50*M, lagCobro:0, lagProv:1, lagImp:1, cerrados:3,
+  fx:{pes:1700,mod:1300,opt:1200},
+  cmvStress:{pes:3,mod:0,opt:-1},
+  inflacion:[30,28,26,22,18,14],
+  hist:{
+    'Warcalde':{fact:[94.5,91,96.25,99.75,103.25,119].map(x=>x*M), cub:[5400,5200,5500,5700,5900,6800]},
+    'Güemes':{fact:[63.6,60.5,62,65.1,66.65,77.5].map(x=>x*M), cub:[4100,3900,4000,4200,4300,5000]},
+    'Capke':{fact:[46.2,44.8,46.2,49,50.4,58.8].map(x=>x*M), cub:[3300,3200,3300,3500,3600,4200]}
+  },
+  real:{
+    'Warcalde':{fact:[118,128,119,0,0,0].map(x=>x*M), cub:[5150,5450,5300,0,0,0]},
+    'Güemes':{fact:[70,68,65,0,0,0].map(x=>x*M), cub:[3800,3700,3600,0,0,0]},
+    'Capke':{fact:[60,59,58,0,0,0].map(x=>x*M), cub:[3350,3300,3250,0,0,0]}
+  },
+  costos:{
+    'Warcalde':{cmv:30.7,reg:4.5,imp:8.7,mant:1.2,sueldos:39.5*M,alquiler:10.4*M,servicios:5.8*M},
+    'Güemes':{cmv:35.7,reg:4.5,imp:10.3,mant:1.0,sueldos:30.9*M,alquiler:3.2*M,servicios:4.2*M},
+    'Capke':{cmv:33.3,reg:5.1,imp:7.0,mant:0.5,sueldos:21.1*M,alquiler:2.1*M,servicios:3.3*M}
+  },
+  qDelta:{pes:{'Warcalde':-12,'Güemes':-18,'Capke':-10},mod:{'Warcalde':-6,'Güemes':-12,'Capke':-4},opt:{'Warcalde':4,'Güemes':0,'Capke':5}},
+  pDelta:{pes:{'Warcalde':-5,'Güemes':-6,'Capke':-4},mod:{'Warcalde':-2,'Güemes':-4,'Capke':0},opt:{'Warcalde':2,'Güemes':0,'Capke':3}},
+  deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),banco:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]}
+};
+let scen='mod', view='cons', localTab='Warcalde', chart, editable=false;
+const SLBL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'};
+
+function gp(p){return p.split('.').reduce((o,k)=>o[k],state);}
+function sp(p,v){const k=p.split('.');let o=state;for(let i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v;}
+
+function inp(path,o){o=o||{};const money=o.money,dec=o.dec||0;let v=gp(path);if(money)v=v/M;
+  return '<input type="text" inputmode="decimal" data-path="'+path+'"'+(money?' data-money="1"':'')+' data-dec="'+dec+'" value="'+fmtAR(v,dec)+'">';}
+
+function liveFmt(raw){
+  var neg=(''+raw).trim().charAt(0)==='-';
+  var s=(''+raw).replace(/[^0-9,]/g,'');
+  var fc=s.indexOf(','),intP,decP=null;
+  if(fc>=0){intP=s.slice(0,fc).replace(/,/g,'');decP=s.slice(fc+1).replace(/,/g,'');}
+  else intP=s.replace(/,/g,'');
+  var intFmt=intP===''?'':Number(intP).toLocaleString('es-AR');
+  var out=(neg?'-':'')+intFmt;
+  if(decP!==null)out+=','+decP;
+  return out;
+}
+function bindInputs(root){(root||document).querySelectorAll('input[data-path]').forEach(function(el){
+  el.disabled=!editable;
+  if(el._b)return;el._b=true;
+  el.addEventListener('input',function(){
+    var caret=el.selectionStart,oldv=el.value;
+    var dl=(oldv.slice(0,caret).match(/[0-9]/g)||[]).length;
+    var nv=liveFmt(oldv);el.value=nv;
+    var pos=0,seen=0;while(pos<nv.length&&seen<dl){if(/[0-9]/.test(nv.charAt(pos)))seen++;pos++;}
+    try{el.setSelectionRange(pos,pos);}catch(e){}
+    var raw=parseAR(nv);var val=raw==null?0:raw;if(el.dataset.money)val=val*M;
+    sp(el.dataset.path,val);updateComputed();renderOutputs();guardarNube();
+  });
+  el.addEventListener('blur',function(){var v=gp(el.dataset.path);if(el.dataset.money)v=v/M;el.value=fmtAR(v,+el.dataset.dec||0);});
+});}
+
+function cubProm(src,L,m){const c=state[src][L].cub[m];return c>0?state[src][L].fact[m]/c:0;}
+function cubAjust(L,m){return cubProm('hist',L,m)*(1+state.inflacion[m]/100);}
+function projFact(s,L,m){const P=cubAjust(L,m)*(1+state.pDelta[s][L]/100);const Q=state.hist[L].cub[m]*(1+state.qDelta[s][L]/100);return P*Q;}
+
+function econ(s,m,onlyL,useReal){
+  let ventas=0,cmv=0,reg=0,imp=0,mant=0,fijos=0,agui=0;
+  LOCALS.forEach(function(L){
+    if(onlyL&&L!==onlyL)return;
+    const f=useReal?state.real[L].fact[m]:projFact(s,L,m);const c=state.costos[L];
+    ventas+=f;cmv+=f*(c.cmv+state.cmvStress[s])/100;reg+=f*c.reg/100;imp+=f*c.imp/100;mant+=f*c.mant/100;
+    fijos+=c.sueldos+c.alquiler+c.servicios;agui+=c.sueldos*0.5/6;
+  });
+  const interes=state.deuda.invInt[m]*state.fx[s];
+  return {ventas,cmv,varOtros:reg+imp+mant,fijos,agui,interes,res:ventas-cmv-reg-imp-mant-fijos-agui-interes};
+}
+function cajaSerie(s,onlyL,useReal,untilClosed){
+  const out=[];let acum=state.cajaIni;
+  for(let m=0;m<6;m++){
+    if(untilClosed&&m>=state.cerrados){out.push(null);continue;}
+    const e=econ(s,m,onlyL,useReal&&m<state.cerrados);
+    const mc=Math.max(0,m-state.lagCobro),mp=Math.max(0,m-state.lagProv),mi=Math.max(0,m-state.lagImp);
+    const cobr=econ(s,mc,onlyL,useReal&&mc<state.cerrados).ventas;
+    const pagoCMV=econ(s,mp,onlyL,useReal&&mp<state.cerrados).cmv;
+    const pagoVar=econ(s,mi,onlyL,useReal&&mi<state.cerrados).varOtros;
+    let agui=0;if(m===5){LOCALS.forEach(function(L){if(!onlyL||L===onlyL)agui+=state.costos[L].sueldos*0.5;});}
+    const vtoInv=(state.deuda.invCap[m]+state.deuda.invInt[m])*state.fx[s];
+    const deuda=state.deuda.fisco[m]+state.deuda.banco[m]+vtoInv;
+    const flujo=cobr-pagoCMV-pagoVar-e.fijos-agui-deuda;
+    acum+=flujo;out.push({flujo,acum,vtoInv,ventas:e.ventas});
+  }
+  return out;
+}
+
+function buildGlobals(){
+  const G=[['cajaIni','Caja inicial (1 jul) $',{money:1,dec:1}],['fx.pes','TC real · pesimista $/USD',{}],['fx.mod','TC real · moderado $/USD',{}],['fx.opt','TC real · optimista $/USD',{}],['lagCobro','Desfasaje cobro (meses)',{}],['lagProv','Plazo proveedores CMV (meses)',{}],['lagImp','Plazo impuestos (meses)',{}],['cerrados','Meses cerrados (real cargado)',{}]];
+  document.getElementById('globals').innerHTML=G.map(g=>'<div><label class="f">'+g[1]+'</label>'+inp(g[0],g[2])+'</div>').join('');
+}
+function buildInf(){
+  document.getElementById('infRow').innerHTML='<table><thead><tr><th class="l">Mes</th>'+MESES.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody><tr><td class="l">Inflación %</td>'+MESES.map((_,m)=>'<td>'+inp('inflacion.'+m,{dec:0})+'</td>').join('')+'</tr></tbody></table>';
+}
+function buildLocalPanel(){
+  const L=localTab;
+  let rows=MESES.map(function(mes,m){
+    return '<tr><td class="l">'+mes+'</td>'
+      +'<td>'+inp('hist.'+L+'.fact.'+m,{money:1,dec:1})+'</td>'
+      +'<td>'+inp('hist.'+L+'.cub.'+m,{dec:0})+'</td>'
+      +'<td class="calc mono" data-cp="'+L+'|'+m+'">'+fmtP(cubProm('hist',L,m))+'</td>'
+      +'<td class="calc mono" data-ca="'+L+'|'+m+'">'+fmtP(cubAjust(L,m))+'</td>'
+      +'<td>'+inp('real.'+L+'.fact.'+m,{money:1,dec:1})+'</td>'
+      +'<td>'+inp('real.'+L+'.cub.'+m,{dec:0})+'</td></tr>';
+  }).join('');
+  document.getElementById('localPanel').innerHTML='<table><thead><tr><th class="l">Mes</th><th>Fact. hist ($M)</th><th>Cub. hist</th><th>Cub. prom</th><th>Cub. ajust</th><th>Fact. real ($M)</th><th>Cub. real</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function buildKnobs(){
+  document.getElementById('knobsBody').innerHTML=LOCALS.map(L=>'<tr><td class="l">'+L+'</td><td>'+inp('qDelta.'+scen+'.'+L,{dec:0})+'</td><td>'+inp('pDelta.'+scen+'.'+L,{dec:0})+'</td></tr>').join('');
+  document.getElementById('cmvStressRow').innerHTML=['pes','mod','opt'].map(s=>'<span class="note" style="width:64px">'+SLBL[s]+'</span><span style="width:90px;display:inline-block">'+inp('cmvStress.'+s,{dec:0})+'</span>').join('');
+}
+function buildCosts(){
+  const rows=[['cmv','CMV','%','v'],['reg','Regalías','%','v'],['imp','Impuestos','%','v'],['mant','Mantenimiento','%','v'],['sueldos','Sueldos / CS','$','f'],['alquiler','Alquiler','$','f'],['servicios','Servicios','$','f']];
+  document.getElementById('costBody').innerHTML=rows.map(function(r){
+    const k=r[0],lbl=r[1],u=r[2],t=r[3];
+    return '<tr><td class="l">'+lbl+'</td>'+LOCALS.map(L=>'<td>'+inp('costos.'+L+'.'+k,u==='$'?{money:1,dec:1}:{dec:1})+'</td>').join('')+'<td class="l"><span class="pill '+(t==='v'?'pv':'pf')+'">'+(t==='v'?'variable':'fijo $')+'</span></td></tr>';
+  }).join('');
+}
+function buildDebt(){
+  const rows=[['fisco','Fisco ($M)','M'],['banco','Banco ($M)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
+  document.getElementById('debtBody').innerHTML=rows.map(function(r){
+    const k=r[0],lbl=r[1],u=r[2];
+    return '<tr><td class="l">'+lbl+'</td>'+MESES.map((_,m)=>'<td>'+inp('deuda.'+k+'.'+m,u==='M'?{money:1,dec:1}:{dec:0})+'</td>').join('')+'</tr>';
+  }).join('');
+}
+
+function updateComputed(){
+  document.querySelectorAll('[data-cp]').forEach(function(td){const a=td.dataset.cp.split('|');td.textContent=fmtP(cubProm('hist',a[0],+a[1]));});
+  document.querySelectorAll('[data-ca]').forEach(function(td){const a=td.dataset.ca.split('|');td.textContent=fmtP(cubAjust(a[0],+a[1]));});
+}
+
+function renderOutputs(){
+  document.querySelectorAll('.scen-tag').forEach(function(e){e.textContent=SLBL[scen];});
+  const onlyL=view==='cons'?null:view;
+  const serie=cajaSerie(scen,null,false);
+  const cierre=serie[5].acum,acums=serie.map(x=>x.acum),piso=Math.min.apply(null,acums),pisoIdx=acums.indexOf(piso);
+  let resSem=0;for(let m=0;m<6;m++)resSem+=econ(scen,m,null,false).res;
+  let vtos=0,cub=0;serie.forEach(x=>{if(x.vtoInv>0){vtos++;if(x.acum>=0)cub++;}});
+  document.getElementById('kpis').innerHTML=
+    '<div class="kpi"><div class="k">Caja al 31/12</div><div class="v '+(cierre>=0?'pos':'neg')+'">'+fmtM(cierre)+'</div><div class="d">cierre del semestre</div></div>'+
+    '<div class="kpi"><div class="k">Piso de caja</div><div class="v '+(piso>=0?'pos':'neg')+'">'+fmtM(piso)+'</div><div class="d">en '+MESES[pisoIdx]+'</div></div>'+
+    '<div class="kpi"><div class="k">Resultado económico</div><div class="v '+(resSem>=0?'pos':'neg')+'">'+fmtM(resSem)+'</div><div class="d">devengado, semestre</div></div>'+
+    '<div class="kpi"><div class="k">Vtos inversores</div><div class="v '+(cub===vtos?'pos':'neg')+'">'+cub+'/'+vtos+'</div><div class="d">cubiertos con caja</div></div>';
+
+  document.getElementById('integralBody').innerHTML=serie.map(function(x,m){
+    let cell='<span class="note">sin vto</span>';
+    if(x.vtoInv>0){const ok=x.acum>=0,tight=x.acum>=0&&x.acum<x.vtoInv*0.5;cell=ok?(tight?'<span class="pill pw">justo</span>':'<span class="pill pg">cubre</span>'):'<span class="pill pd">no cubre</span>';}
+    return '<tr><td class="l">'+MESES[m]+'</td><td class="mono '+(x.flujo<0?'neg':'')+'">'+fmtM(x.flujo)+'</td><td class="mono">'+(x.vtoInv>0?fmtM(x.vtoInv):'—')+'</td><td class="mono '+(x.acum<0?'neg':'')+'">'+fmtM(x.acum)+'</td><td class="l">'+cell+'</td></tr>';
+  }).join('');
+  const faltas=serie.map((x,m)=>({x,m})).filter(o=>o.x.vtoInv>0&&o.x.acum<0).map(o=>MESES[o.m]);
+  document.getElementById('integralNote').textContent=faltas.length?('En este escenario no llegás al vencimiento de '+faltas.join(', ')+'. Ahí tenés que renegociar plazo o quita, o conseguir fondeo antes.'):'En este escenario cubrís todos los vencimientos con inversores. Mirá igual el piso de caja: si queda muy fino, un imprevisto te complica.';
+
+  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Fijos','fijos',-1],['− Aguinaldo (deveng.)','agui',-1],['− Intereses','interes',-1]];
+  let eb='';
+  eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,false)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
+  let semRes=0;const rc=MESES.map(function(_,m){const rr=econ(scen,m,onlyL,false).res;semRes+=rr;return '<td class="mono '+(rr<0?'neg':'pos')+'">'+fmtM(rr)+'</td>';}).join('');
+  eb+='<tr class="fin"><td class="l">Resultado</td>'+rc+'<td class="mono '+(semRes<0?'neg':'pos')+'">'+fmtM(semRes)+'</td></tr>';
+  document.getElementById('econBody').innerHTML=eb;
+
+  const cs=cajaSerie(scen,onlyL,false);
+  let cb='<tr><td class="l">Flujo del mes</td>'+cs.map(x=>'<td class="mono '+(x.flujo<0?'neg':'')+'">'+fmtM(x.flujo)+'</td>').join('')+'<td class="mono">'+fmtM(cs.reduce((a,x)=>a+x.flujo,0))+'</td></tr>';
+  cb+='<tr class="fin"><td class="l">Caja acumulada</td>'+cs.map(x=>'<td class="mono '+(x.acum<0?'neg':'pos')+'">'+fmtM(x.acum)+'</td>').join('')+'<td class="mono">—</td></tr>';
+  document.getElementById('cashBody').innerHTML=cb;
+
+  document.getElementById('desvioBody').innerHTML=MESES.map(function(mes,m){
+    const closed=m<state.cerrados;let estF=0,estC=0,realF=0,realC=0;
+    LOCALS.forEach(function(L){estF+=projFact(scen,L,m);estC+=state.hist[L].cub[m]*(1+state.qDelta[scen][L]/100);realF+=state.real[L].fact[m];realC+=state.real[L].cub[m];});
+    if(!closed)return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="note">pendiente</td><td class="mono">'+fmtN(estC)+'</td><td class="note">—</td><td class="note">—</td></tr>';
+    const dev=estF>0?(realF/estF-1)*100:0;
+    return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="mono">'+fmtM(realF)+'</td><td class="mono">'+fmtN(estC)+'</td><td class="mono">'+fmtN(realC)+'</td><td class="mono '+(dev<0?'neg':'pos')+'">'+(dev>=0?'+':'')+fmtAR(dev,0)+'%</td></tr>';
+  }).join('');
+
+  drawChart();
+}
+
+function drawChart(){
+  const ds=s=>cajaSerie(s,null,false).map(x=>x.acum/M);
+  const real=cajaSerie(scen,null,true,true).map(x=>x?x.acum/M:null);
+  const data={labels:MESES,datasets:[
+    {label:'Optimista',data:ds('opt'),borderColor:'#1E8A5B',borderWidth:2,tension:.3,pointRadius:2,fill:false},
+    {label:'Moderado',data:ds('mod'),borderColor:'#275A86',borderWidth:2,tension:.3,pointRadius:2,borderDash:[6,4],fill:false},
+    {label:'Pesimista',data:ds('pes'),borderColor:'#BE4733',borderWidth:2,tension:.3,pointRadius:2,borderDash:[2,3],fill:false},
+    {label:'Real (cerrado)',data:real,borderColor:'#16212B',borderWidth:2.5,tension:.3,pointRadius:3,pointStyle:'rectRot',fill:false}
+  ]};
+  const opts={responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{font:{family:'Inter',size:12},usePointStyle:true,pointStyleWidth:10,color:'#16212B'}},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtM(c.parsed.y*M)}}},
+    scales:{y:{ticks:{font:{family:'IBM Plex Mono',size:11},color:'#4A5763',callback:v=>(v<0?'-':'')+'$'+fmtAR(Math.abs(v),0)+'M'},grid:{color:'#E4E8EC'}},
+      x:{grid:{display:false},ticks:{font:{family:'Inter',size:12},color:'#4A5763'}}}};
+  if(chart){chart.data=data;chart.update();}else chart=new Chart(document.getElementById('chart'),{type:'line',data,options:opts});
+}
+
+function renderLocalTabs(){
+  const t=document.getElementById('localTabs');
+  t.innerHTML=LOCALS.map(L=>'<button data-l="'+L+'" class="'+(L===localTab?'on':'')+'">'+L+'</button>').join('');
+  t.querySelectorAll('button').forEach(b=>b.onclick=function(){localTab=b.dataset.l;renderLocalTabs();buildLocalPanel();bindInputs(document.getElementById('localPanel'));});
+}
+
+function render(){
+  document.querySelectorAll('#scenTabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===scen));
+  document.getElementById('scenLbl').textContent=SLBL[scen];
+  buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();
+  bindInputs(document);renderOutputs();
+}
+
+document.querySelectorAll('#scenTabs button').forEach(b=>b.onclick=function(){scen=b.dataset.s;document.querySelectorAll('#scenTabs button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('scenLbl').textContent=SLBL[scen];buildKnobs();bindInputs(document.getElementById('knobsBody'));bindInputs(document.getElementById('cmvStressRow'));renderOutputs();});
+document.querySelectorAll('#viewTabs button').forEach(b=>b.onclick=function(){view=b.dataset.v;document.querySelectorAll('#viewTabs button').forEach(x=>x.classList.toggle('on',x===b));renderOutputs();});
+document.getElementById('btnExport').onclick=function(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='datos-proyeccion-caja.json';a.click();};
+document.getElementById('btnImport').onclick=()=>document.getElementById('fileImport').click();
+document.getElementById('fileImport').onchange=function(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(){try{state=JSON.parse(r.result);render();guardarNube();}catch(err){alert('Archivo inválido');}};r.readAsText(f);};
+
+var SB_URL='https://hprzsjhebvrmwapizptv.supabase.co';
+var SB_KEY='sb_publishable_AcZUtJqQy96_uKKYQtqa2A_B4rYQvNX';
+var CLAVE_EDICION='caja2026';
+var sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
+var saveT=null;
+function setEstado(txt,cls){var e=document.getElementById('nubeEstado');if(e){e.textContent=txt;e.className='pill '+(cls||'pf');}}
+function setEditable(b){editable=b;document.querySelectorAll('input[data-path]').forEach(function(el){el.disabled=!b;});var btn=document.getElementById('btnEditar');if(btn)btn.textContent=b?'Editando':'Editar';setEstado(b?'guardado':'modo lectura',b?'pg':'pf');}
+function guardarNube(){
+  if(!editable||!sb)return;
+  clearTimeout(saveT);setEstado('guardando…','pw');
+  saveT=setTimeout(function(){
+    sb.from('caja_estados').upsert({slug:'actual',nombre:'Estado actual',data:state,updated_at:new Date().toISOString()}).then(function(r){setEstado(r.error?'error al guardar':'guardado',r.error?'pd':'pg');});
+  },800);
+}
+function cargarVersiones(){
+  if(!sb)return;
+  sb.from('caja_estados').select('slug,nombre').neq('slug','actual').order('updated_at',{ascending:false}).then(function(r){
+    var sel=document.getElementById('verSelect');if(!sel)return;
+    sel.innerHTML='<option value="">Cargar versión…</option>'+((r.data||[]).map(function(v){return '<option value="'+v.slug+'">'+(v.nombre||v.slug)+'</option>';}).join(''));
+  });
+}
+function bootstrap(){
+  if(!sb){setEstado('sin conexión','pd');render();return;}
+  setEstado('cargando…','pf');
+  sb.from('caja_estados').select('data').eq('slug','actual').maybeSingle().then(function(r){
+    if(r.data&&r.data.data){state=r.data.data;}
+    render();setEstado('modo lectura','pf');cargarVersiones();
+  });
+}
+document.getElementById('btnEditar').onclick=function(){
+  if(editable){setEditable(false);return;}
+  var c=prompt('Clave para editar:');if(c===CLAVE_EDICION){setEditable(true);}else if(c!==null){alert('Clave incorrecta');}
+};
+document.getElementById('btnGuardarVer').onclick=function(){
+  if(!editable){alert('Activá "Editar" primero');return;}
+  if(!sb)return;
+  var nom=document.getElementById('verNombre').value.trim();if(!nom){alert('Poné un nombre para la versión');return;}
+  var slug=nom.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||('v'+Date.now());
+  sb.from('caja_estados').upsert({slug:slug,nombre:nom,data:state,updated_at:new Date().toISOString()}).then(function(r){
+    if(r.error){alert('No se pudo guardar la versión');}else{document.getElementById('verNombre').value='';cargarVersiones();setEstado('versión guardada','pg');}
+  });
+};
+document.getElementById('verSelect').onchange=function(){
+  var slug=this.value;if(!slug||!sb)return;
+  sb.from('caja_estados').select('data').eq('slug',slug).maybeSingle().then(function(r){
+    if(r.data&&r.data.data){state=r.data.data;render();setEstado('versión cargada (no guardada)','pw');}
+  });
+  this.value='';
+};
+bootstrap();
+</script>
+</body>
+</html>
