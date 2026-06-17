@@ -282,24 +282,24 @@ function cajaSerie(s,onlyL,useReal,untilClosed){
 }
 
 function buildGlobals(){
-  const G=[['cajaIni','Caja inicial (1 jul) $',{money:1,dec:1}],['fx.pes','TC real · pesimista $/USD',{}],['fx.mod','TC real · moderado $/USD',{}],['fx.opt','TC real · optimista $/USD',{}],['lagCobro','Desfasaje cobro (meses)',{}],['lagProv','Plazo proveedores CMV (meses)',{}],['lagImp','Plazo impuestos (meses)',{}],['cerrados','Meses cerrados (real cargado)',{}]];
+  const G=[['cajaIni','Caja inicial (1 jul) $',{dec:0}],['fx.pes','TC real · pesimista $/USD',{}],['fx.mod','TC real · moderado $/USD',{}],['fx.opt','TC real · optimista $/USD',{}],['lagCobro','Desfasaje cobro (meses)',{}],['lagProv','Plazo proveedores CMV (meses)',{}],['lagImp','Plazo impuestos (meses)',{}],['cerrados','Meses cerrados (real cargado)',{}]];
   document.getElementById('globals').innerHTML=G.map(g=>'<div><label class="f">'+g[1]+'</label>'+inp(g[0],g[2])+'</div>').join('');
 }
 function buildInf(){
-  document.getElementById('infRow').innerHTML='<table><thead><tr><th class="l">Mes</th>'+MESES.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody><tr><td class="l">Inflación %</td>'+MESES.map((_,m)=>'<td>'+inp('inflacion.'+m,{dec:0})+'</td>').join('')+'</tr></tbody></table>';
+  document.getElementById('infRow').innerHTML='<table><thead><tr><th class="l">Mes</th>'+MESES.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody><tr><td class="l">Inflación %</td>'+MESES.map((_,m)=>'<td>'+inp('inflacion.'+m,{dec:2})+'</td>').join('')+'</tr></tbody></table>';
 }
 function buildLocalPanel(){
   const L=localTab;
   let rows=MESES.map(function(mes,m){
     return '<tr><td class="l">'+mes+'</td>'
-      +'<td>'+inp('hist.'+L+'.fact.'+m,{money:1,dec:1})+'</td>'
+      +'<td>'+inp('hist.'+L+'.fact.'+m,{dec:0})+'</td>'
       +'<td>'+inp('hist.'+L+'.cub.'+m,{dec:0})+'</td>'
       +'<td class="calc mono" data-cp="'+L+'|'+m+'">'+fmtP(cubProm('hist',L,m))+'</td>'
       +'<td class="calc mono" data-ca="'+L+'|'+m+'">'+fmtP(cubAjust(L,m))+'</td>'
-      +'<td>'+inp('real.'+L+'.fact.'+m,{money:1,dec:1})+'</td>'
+      +'<td>'+inp('real.'+L+'.fact.'+m,{dec:0})+'</td>'
       +'<td>'+inp('real.'+L+'.cub.'+m,{dec:0})+'</td></tr>';
   }).join('');
-  document.getElementById('localPanel').innerHTML='<table><thead><tr><th class="l">Mes</th><th>Fact. hist ($M)</th><th>Cub. hist</th><th>Cub. prom</th><th>Cub. ajust</th><th>Fact. real ($M)</th><th>Cub. real</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  document.getElementById('localPanel').innerHTML='<table><thead><tr><th class="l">Mes</th><th>Fact. hist ($)</th><th>Cub. hist</th><th>Cub. prom</th><th>Cub. ajust</th><th>Fact. real ($)</th><th>Cub. real</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function buildKnobs(){
   document.getElementById('knobsBody').innerHTML=LOCALS.map(L=>'<tr><td class="l">'+L+'</td><td>'+inp('qDelta.'+scen+'.'+L,{dec:0})+'</td><td>'+inp('pDelta.'+scen+'.'+L,{dec:0})+'</td></tr>').join('');
@@ -309,14 +309,14 @@ function buildCosts(){
   const rows=[['cmv','CMV','%','v'],['reg','Regalías','%','v'],['imp','Impuestos','%','v'],['mant','Mantenimiento','%','v'],['sueldos','Sueldos / CS','$','f'],['alquiler','Alquiler','$','f'],['servicios','Servicios','$','f']];
   document.getElementById('costBody').innerHTML=rows.map(function(r){
     const k=r[0],lbl=r[1],u=r[2],t=r[3];
-    return '<tr><td class="l">'+lbl+'</td>'+LOCALS.map(L=>'<td>'+inp('costos.'+L+'.'+k,u==='$'?{money:1,dec:1}:{dec:1})+'</td>').join('')+'<td class="l"><span class="pill '+(t==='v'?'pv':'pf')+'">'+(t==='v'?'variable':'fijo $')+'</span></td></tr>';
+    return '<tr><td class="l">'+lbl+'</td>'+LOCALS.map(L=>'<td>'+inp('costos.'+L+'.'+k,u==='$'?{dec:0}:{dec:1})+'</td>').join('')+'<td class="l"><span class="pill '+(t==='v'?'pv':'pf')+'">'+(t==='v'?'variable':'fijo $')+'</span></td></tr>';
   }).join('');
 }
 function buildDebt(){
-  const rows=[['fisco','Fisco ($M)','M'],['banco','Banco ($M)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
+  const rows=[['fisco','Fisco ($)','M'],['banco','Banco ($)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
   document.getElementById('debtBody').innerHTML=rows.map(function(r){
     const k=r[0],lbl=r[1],u=r[2];
-    return '<tr><td class="l">'+lbl+'</td>'+MESES.map((_,m)=>'<td>'+inp('deuda.'+k+'.'+m,u==='M'?{money:1,dec:1}:{dec:0})+'</td>').join('')+'</tr>';
+    return '<tr><td class="l">'+lbl+'</td>'+MESES.map((_,m)=>'<td>'+inp('deuda.'+k+'.'+m,{dec:0})+'</td>').join('')+'</tr>';
   }).join('');
 }
 
@@ -458,5 +458,3 @@ bootstrap();
 </script>
 </body>
 </html>
-
-
