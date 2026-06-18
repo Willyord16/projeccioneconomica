@@ -55,13 +55,17 @@
   .kpi .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);font-weight:600}
   .kpi .v{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums}
   .kpi .d{font-size:11px;color:var(--soft);margin-top:2px}
-  .pos{color:var(--green)}.neg{color:var(--red)}.fib{color:var(--blue)}
+  .pos{color:var(--green)}.neg{color:var(--red)}
   .gridc{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px 16px}
   .btn{border:1px solid var(--frame);background:#fff;color:var(--blue);border-radius:9px;padding:8px 14px;font-family:'Inter';font-size:12.5px;font-weight:600;cursor:pointer}
   .btn:hover{background:#F1F5FA}
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .note{font-size:12px;color:var(--soft);line-height:1.6}
   .fin td{border-top:2px solid var(--line);font-weight:600}
+  .eye{cursor:pointer;user-select:none}
+  .cv{display:inline-block;width:9px;margin-right:7px;font-size:9px;color:var(--gold);transition:transform .15s;vertical-align:middle}
+  .eye.col .cv{transform:rotate(-90deg)}
+  .card.col,.kpis.col{display:none}
   @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:25px}}
 </style>
 </head>
@@ -359,11 +363,11 @@ function renderOutputs(){
   const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Intereses','interes',-1]];
   let eb='';
   eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,false)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
-  let semRes=0,semVts=0;const rc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);semRes+=e.res;semVts+=e.ventas;return '<td class="mono '+(e.res<0?'neg':'fib')+'">'+fmtM(e.res)+'</td>';}).join('');
-  eb+='<tr class="fin"><td class="l">Resultado</td>'+rc+'<td class="mono '+(semRes<0?'neg':'fib')+'">'+fmtM(semRes)+'</td></tr>';
-  const pc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);const p=e.ventas>0?e.res/e.ventas*100:0;return '<td class="mono '+(p<0?'neg':'fib')+'">'+fmtAR(p,1)+'%</td>';}).join('');
+  let semRes=0,semVts=0;const rc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);semRes+=e.res;semVts+=e.ventas;return '<td class="mono '+(e.res<0?'neg':'pos')+'">'+fmtM(e.res)+'</td>';}).join('');
+  eb+='<tr class="fin"><td class="l">Resultado</td>'+rc+'<td class="mono '+(semRes<0?'neg':'pos')+'">'+fmtM(semRes)+'</td></tr>';
+  const pc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);const p=e.ventas>0?e.res/e.ventas*100:0;return '<td class="mono '+(p<0?'neg':'pos')+'">'+fmtAR(p,1)+'%</td>';}).join('');
   const semP=semVts>0?semRes/semVts*100:0;
-  eb+='<tr><td class="l">Rentabilidad neta %</td>'+pc+'<td class="mono '+(semP<0?'neg':'fib')+'">'+fmtAR(semP,1)+'%</td></tr>';
+  eb+='<tr><td class="l">Rentabilidad neta %</td>'+pc+'<td class="mono '+(semP<0?'neg':'pos')+'">'+fmtAR(semP,1)+'%</td></tr>';
   document.getElementById('econBody').innerHTML=eb;
 
   const cs=cajaSerie(scen,onlyL,false);
@@ -483,7 +487,19 @@ document.getElementById('verSelect').onchange=function(){
   });
   this.value='';
 };
+function initColapsables(){
+  document.querySelectorAll('.eye').forEach(function(e){
+    if(e.dataset.cl)return;
+    var box=e.nextElementSibling;
+    if(!box||!(box.classList.contains('card')||box.classList.contains('kpis')))return;
+    e.dataset.cl='1';
+    var cv=document.createElement('span');cv.className='cv';cv.textContent='▾';
+    e.insertBefore(cv,e.firstChild);
+    e.addEventListener('click',function(){e.classList.toggle('col');box.classList.toggle('col');});
+  });
+}
 bootstrap();
+initColapsables();
 </script>
 </body>
 </html>
