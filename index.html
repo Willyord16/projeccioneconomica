@@ -66,6 +66,8 @@
   .cv{display:inline-block;width:9px;margin-right:7px;font-size:9px;color:var(--gold);transition:transform .15s;vertical-align:middle}
   .eye.col .cv{transform:rotate(-90deg)}
   .card.col,.kpis.col{display:none}
+  .sct{color:var(--gold);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin:18px 0 8px}
+  .cmvbox{background:var(--bluebg);border-radius:10px;padding:11px 14px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12.5px;font-weight:600;color:var(--text)}
   @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:25px}}
 </style>
 </head>
@@ -181,6 +183,18 @@
     <tbody id="desvioBody"></tbody></table></div>
   </div>
 
+  <div class="eye">Corte al 15 · termómetro del mes <span class="pill pv scen-tag">Moderado</span></div>
+  <div class="card">
+    <p class="sub">Cada mes, al día 15, cargás lo real del 1 al 15 (facturación, cubiertos y CMV) por local. El tablero calcula el ritmo, el margen real y proyecta el cierre, y lo compara contra el estimado del escenario activo. Los fijos del cierre salen de tu tabla de costos fijos —actualizalos con el real del mes.</p>
+    <div class="row" style="margin-bottom:12px;align-items:center;gap:14px;flex-wrap:wrap">
+      <span class="note" style="font-weight:600;color:var(--text)">Mes del corte:</span>
+      <div class="tabs sm" id="corteTabs"></div>
+    </div>
+    <div class="scr" id="corteShare" style="margin-bottom:16px"></div>
+    <div class="scr" id="corteInputs" style="margin-bottom:6px"></div>
+    <div id="corteOut"></div>
+  </div>
+
 </div>
 
 <script>
@@ -195,6 +209,8 @@ const fmtN=v=>fmtAR(v,0);
 
 let state={
   cajaIni:50*M, lagCobro:0, lagProv:30, lagImp:30, lagUnit:'dias', cerrados:3,
+  share:{'Warcalde':48,'Güemes':48,'Capke':48},
+  corte:{'Warcalde':{fact:[0,0,0,0,0,0],cub:[0,0,0,0,0,0],cmv:[0,0,0,0,0,0]},'Güemes':{fact:[0,0,0,0,0,0],cub:[0,0,0,0,0,0],cmv:[0,0,0,0,0,0]},'Capke':{fact:[0,0,0,0,0,0],cub:[0,0,0,0,0,0],cmv:[0,0,0,0,0,0]}},
   fx:{pes:1700,mod:1300,opt:1200},
   cmvStress:{pes:3,mod:0,opt:-1},
   inflacion:[30,28,26,22,18,14],
@@ -217,7 +233,7 @@ let state={
   pDelta:{pes:{'Warcalde':-5,'Güemes':-6,'Capke':-4},mod:{'Warcalde':-2,'Güemes':-4,'Capke':0},opt:{'Warcalde':2,'Güemes':0,'Capke':3}},
   deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),banco:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]}
 };
-let scen='mod', view='cons', localTab='Warcalde', chart, editable=false;
+let scen='mod', view='cons', localTab='Warcalde', chart, editable=false, corteMes=0;
 const SLBL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'};
 
 function gp(p){return p.split('.').reduce((o,k)=>o[k],state);}
@@ -383,7 +399,7 @@ function renderOutputs(){
     return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="mono">'+fmtM(realF)+'</td><td class="mono">'+fmtN(estC)+'</td><td class="mono">'+fmtN(realC)+'</td><td class="mono '+(dev<0?'neg':'pos')+'">'+(dev>=0?'+':'')+fmtAR(dev,0)+'%</td></tr>';
   }).join('');
 
-  drawChart();
+  drawChart();renderCorteOut();
 }
 
 function drawChart(){
@@ -409,6 +425,84 @@ function renderLocalTabs(){
   t.querySelectorAll('button').forEach(b=>b.onclick=function(){localTab=b.dataset.l;renderLocalTabs();buildLocalPanel();bindInputs(document.getElementById('localPanel'));});
 }
 
+function corteData(m){
+  if(!state.corte||!state.share)return null;
+  var any=0;LOCALS.forEach(function(L){any+=(+state.corte[L].fact[m]||0);});
+  if(any<=0)return null;
+  var real15=0,cmv15=0,esp15=0,cierreV=0,cierreCMV=0,regimp=0,fijos=0;var per=[];
+  var sumCub15=0,sumAjustW=0;
+  LOCALS.forEach(function(L){
+    var f15=+state.corte[L].fact[m]||0,cm15=+state.corte[L].cmv[m]||0,c15=+state.corte[L].cub[m]||0;
+    var sh=(+state.share[L]||0)/100;
+    var estV=projFact(scen,L,m);
+    var esp=estV*sh;
+    var cV=(sh>0&&f15>0)?f15/sh:estV;
+    var c=state.costos[L];
+    var ratio=f15>0?cm15/f15:(c.cmv+state.cmvStress[scen])/100;
+    var promReal=c15>0?f15/c15:0,promAjust=cubAjust(L,m);
+    real15+=f15;cmv15+=cm15;esp15+=esp;cierreV+=cV;cierreCMV+=cV*ratio;
+    regimp+=cV*(c.reg+c.imp+c.mant)/100;
+    fijos+=c.sueldos[m]+c.alquiler[m]+c.servicios[m];
+    sumCub15+=c15;sumAjustW+=promAjust*c15;
+    per.push({L:L,f15:f15,esp:esp,ritmo:esp>0?f15/esp:0,cierre:cV,cub15:c15,promReal:promReal,promAjust:promAjust});
+  });
+  var interes=state.deuda.invInt[m]*state.fx[scen];
+  var resProy=cierreV-cierreCMV-regimp-fijos-interes;
+  var e=econ(scen,m,null,false);
+  var budCmvPct=e.ventas>0?e.cmv/e.ventas*100:0;
+  return {m:m,per:per,real15:real15,cmv15:cmv15,esp15:esp15,cierreV:cierreV,cierreCMV:cierreCMV,
+    regimp:regimp,fijos:fijos,interes:interes,resProy:resProy,
+    rentProy:cierreV>0?resProy/cierreV*100:0,
+    margen15:real15-cmv15,espMargen15:esp15*(1-budCmvPct/100),
+    cmvPctReal:real15>0?cmv15/real15*100:0,cmvPctBud:budCmvPct,
+    cub15Tot:sumCub15,promRealCons:sumCub15>0?real15/sumCub15:0,promAjustCons:sumCub15>0?sumAjustW/sumCub15:0,
+    est:e,rentEst:e.ventas>0?e.res/e.ventas*100:0};
+}
+function buildCorteTabs(){
+  document.getElementById('corteTabs').innerHTML=MESES.map(function(mz,i){return '<button data-cm="'+i+'"'+(i===corteMes?' class="on"':'')+'>'+mz+'</button>';}).join('');
+  document.querySelectorAll('#corteTabs button').forEach(function(b){b.onclick=function(){corteMes=+b.dataset.cm;document.querySelectorAll('#corteTabs button').forEach(function(x){x.classList.toggle('on',x===b);});buildCorteInputs();bindInputs(document.getElementById('corteInputs'));renderCorteOut();};});
+}
+function buildCorteShare(){
+  document.getElementById('corteShare').innerHTML='<table><thead><tr><th class="l">% de la facturación que entra hasta el 15</th>'+LOCALS.map(function(L){return '<th>'+L+'</th>';}).join('')+'</tr></thead><tbody><tr><td class="l">% al 15</td>'+LOCALS.map(function(L){return '<td>'+inp('share.'+L,{dec:0})+'</td>';}).join('')+'</tr></tbody></table>';
+}
+function buildCorteInputs(){
+  var m=corteMes;var rows=[['fact','Facturación ($)'],['cub','Cubiertos'],['cmv','CMV ($)']];
+  var h='<table><thead><tr><th class="l">Real 1–15 · '+MESES[m]+'</th>'+LOCALS.map(function(L){return '<th>'+L+'</th>';}).join('')+'</tr></thead><tbody>';
+  rows.forEach(function(r){h+='<tr><td class="l">'+r[1]+'</td>'+LOCALS.map(function(L){return '<td>'+inp('corte.'+L+'.'+r[0]+'.'+m,{dec:0})+'</td>';}).join('')+'</tr>';});
+  h+='</tbody></table>';
+  document.getElementById('corteInputs').innerHTML=h;
+}
+function renderCorteOut(){
+  var out=document.getElementById('corteOut');if(!out)return;
+  var d=corteData(corteMes);
+  if(!d){out.innerHTML='<p class="sub" style="text-align:center;padding:18px 0">Cargá el corte del 1 al 15 de '+MESES[corteMes]+' (facturación, cubiertos y CMV) para ver el análisis.</p>';return;}
+  var ritC=d.esp15>0?d.real15/d.esp15:0;
+  var h='<div class="sct">Ritmo de ventas al 15</div><div class="scr"><table><thead><tr><th class="l">Local</th><th>Real 1–15</th><th>Esperado 1–15</th><th>Ritmo</th><th>Cierre proy.</th></tr></thead><tbody>';
+  d.per.forEach(function(p){h+='<tr><td class="l">'+p.L+'</td><td class="mono">'+fmtM(p.f15)+'</td><td class="mono">'+fmtM(p.esp)+'</td><td class="mono '+(p.ritmo>=1?'pos':'neg')+'">'+fmtAR(p.ritmo*100,0)+'%</td><td class="mono">'+fmtM(p.cierre)+'</td></tr>';});
+  h+='<tr class="fin"><td class="l">Consolidado</td><td class="mono">'+fmtM(d.real15)+'</td><td class="mono">'+fmtM(d.esp15)+'</td><td class="mono '+(ritC>=1?'pos':'neg')+'">'+fmtAR(ritC*100,0)+'%</td><td class="mono">'+fmtM(d.cierreV)+'</td></tr></tbody></table></div>';
+  h+='<div class="sct">Cubierto promedio al 15 · real vs ajustado por inflación</div><div class="scr"><table><thead><tr><th class="l">Local</th><th>Cubiertos</th><th>Prom. real</th><th>Prom. ajustado</th><th>Desvío</th></tr></thead><tbody>';
+  d.per.forEach(function(p){var dv=p.promAjust>0?(p.promReal/p.promAjust-1)*100:0;h+='<tr><td class="l">'+p.L+'</td><td class="mono">'+fmtAR(p.cub15,0)+'</td><td class="mono">$'+fmtAR(p.promReal,0)+'</td><td class="mono">$'+fmtAR(p.promAjust,0)+'</td><td class="mono '+(dv<0?'neg':'pos')+'">'+(dv>=0?'+':'')+fmtAR(dv,1)+'%</td></tr>';});
+  var dvC=d.promAjustCons>0?(d.promRealCons/d.promAjustCons-1)*100:0;
+  h+='<tr class="fin"><td class="l">Consolidado</td><td class="mono">'+fmtAR(d.cub15Tot,0)+'</td><td class="mono">$'+fmtAR(d.promRealCons,0)+'</td><td class="mono">$'+fmtAR(d.promAjustCons,0)+'</td><td class="mono '+(dvC<0?'neg':'pos')+'">'+(dvC>=0?'+':'')+fmtAR(dvC,1)+'%</td></tr></tbody></table></div>';
+  h+='<div class="sct">Margen variable real al 15 · consolidado</div><div class="scr"><table><tbody>';
+  h+='<tr><td class="l">Ventas reales</td><td class="mono">'+fmtM(d.real15)+'</td></tr>';
+  h+='<tr><td class="l">− CMV real</td><td class="mono">'+fmtM(d.cmv15)+'</td></tr>';
+  h+='<tr class="fin"><td class="l">Margen variable</td><td class="mono">'+fmtM(d.margen15)+'</td></tr>';
+  h+='<tr><td class="l note">Esperado al 15</td><td class="mono note">'+fmtM(d.espMargen15)+'</td></tr></tbody></table></div>';
+  var cmvDelta=d.cmvPctReal-d.cmvPctBud;
+  h+='<div class="cmvbox"><span>CMV real vs presupuesto</span><span class="mono '+(cmvDelta>0?'neg':'pos')+'">'+fmtAR(d.cmvPctBud,1)+'% → '+fmtAR(d.cmvPctReal,1)+'% · '+(cmvDelta>0?'+':'')+fmtAR(cmvDelta,1)+' pts</span></div>';
+  h+='<div class="sct">Cierre proyectado del mes · consolidado</div><div class="scr"><table><thead><tr><th class="l"></th><th>Proy. (ritmo real)</th><th>Estimado</th></tr></thead><tbody>';
+  var rows3=[['Ventas',d.cierreV,d.est.ventas,0],['− CMV',d.cierreCMV,d.est.cmv,0],['Margen variable',d.cierreV-d.cierreCMV,d.est.ventas-d.est.cmv,1],['− Reg/Imp/Mant',d.regimp,d.est.varOtros,0],['− Fijos del mes',d.fijos,d.est.fijos,0],['− Intereses',d.interes,d.est.interes,0],['Resultado',d.resProy,d.est.res,2]];
+  rows3.forEach(function(r){var fin=r[3];h+='<tr'+(fin?' class="fin"':'')+'><td class="l">'+r[0]+'</td><td class="mono'+(fin===2?(r[1]<0?' neg':' pos'):'')+'">'+fmtM(r[1])+'</td><td class="mono note">'+fmtM(r[2])+'</td></tr>';});
+  h+='<tr><td class="l note">Rentabilidad neta</td><td class="mono '+(d.rentProy<0?'neg':'pos')+'">'+fmtAR(d.rentProy,1)+'%</td><td class="mono note">'+fmtAR(d.rentEst,1)+'%</td></tr></tbody></table></div>';
+  var rowsT='',anyT=false;
+  MESES.forEach(function(mz,mm){var dd=corteData(mm);if(!dd)return;anyT=true;var rit=dd.esp15>0?dd.real15/dd.esp15*100:0;var desv=dd.est.res!==0?(dd.resProy-dd.est.res)/Math.abs(dd.est.res)*100:0;rowsT+='<tr><td class="l">'+mz+'</td><td class="mono '+(rit>=100?'pos':'neg')+'">'+fmtAR(rit,0)+'%</td><td class="mono '+(dd.cmvPctReal>dd.cmvPctBud?'neg':'pos')+'">'+fmtAR(dd.cmvPctReal,1)+'%</td><td class="mono '+(dd.resProy<0?'neg':'pos')+'">'+fmtM(dd.resProy)+'</td><td class="mono '+(desv<0?'neg':'pos')+'">'+(desv>0?'+':'')+fmtAR(desv,0)+'%</td></tr>';});
+  h+='<div class="sct">Tendencia · meses con corte cargado</div>';
+  if(anyT)h+='<div class="scr"><table><thead><tr><th class="l">Mes</th><th>Ritmo vtas.</th><th>CMV% real</th><th>Resultado proy.</th><th>vs estimado</th></tr></thead><tbody>'+rowsT+'</tbody></table></div>';
+  else h+='<p class="note">Cargá cortes en varios meses para ver la tendencia.</p>';
+  out.innerHTML=h;
+}
+function buildCorte(){buildCorteTabs();buildCorteShare();buildCorteInputs();renderCorteOut();}
 function normalizar(){
   LOCALS.forEach(function(L){
     if(!state.costos||!state.costos[L])return;
@@ -423,12 +517,19 @@ function normalizar(){
     state.lagImp=Math.round((+state.lagImp||0)*30);
     state.lagUnit='dias';
   }
+  if(!state.share)state.share={};
+  if(!state.corte)state.corte={};
+  LOCALS.forEach(function(L){
+    if(state.share[L]==null)state.share[L]=48;
+    if(!state.corte[L])state.corte[L]={fact:[0,0,0,0,0,0],cub:[0,0,0,0,0,0],cmv:[0,0,0,0,0,0]};
+    ['fact','cub','cmv'].forEach(function(k){if(!Array.isArray(state.corte[L][k]))state.corte[L][k]=[0,0,0,0,0,0];});
+  });
 }
 function render(){
   normalizar();
   document.querySelectorAll('#scenTabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===scen));
   document.getElementById('scenLbl').textContent=SLBL[scen];
-  buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();
+  buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();buildCorte();
   bindInputs(document);renderOutputs();
 }
 
