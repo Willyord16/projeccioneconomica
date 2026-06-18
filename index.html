@@ -25,7 +25,7 @@
   .eyebrow::before{content:"";width:22px;height:2px;background:var(--gold);display:inline-block}
   .hero h1{font-family:'Spectral',serif;font-weight:600;font-size:30px;line-height:1.12;margin:13px 0 6px}
   .hero p{color:#CFDDEE;max-width:640px;margin:0;font-size:14px}
-  .eye{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600;display:flex;align-items:center;gap:9px;margin:30px 0 12px}
+  .eye{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;display:flex;align-items:center;gap:9px;margin:30px 0 12px}
   .eye::before{content:"";width:20px;height:2px;background:var(--gold);display:inline-block}
   .card{background:var(--card);border:1.5px solid var(--frame);border-radius:16px;padding:20px}
   .card h2{font-family:'Spectral',serif;font-weight:600;font-size:18px;margin:0 0 4px}
@@ -190,6 +190,10 @@
       <span class="note" style="font-weight:600;color:var(--text)">Mes del corte:</span>
       <div class="tabs sm" id="corteTabs"></div>
     </div>
+    <div class="row" style="margin-bottom:14px;align-items:center;gap:14px;flex-wrap:wrap">
+      <span class="note" style="font-weight:600;color:var(--text)">Vista:</span>
+      <div class="tabs sm" id="corteViewTabs"></div>
+    </div>
     <div class="scr" id="corteShare" style="margin-bottom:16px"></div>
     <div class="scr" id="corteInputs" style="margin-bottom:6px"></div>
     <div id="corteOut"></div>
@@ -233,7 +237,7 @@ let state={
   pDelta:{pes:{'Warcalde':-5,'Güemes':-6,'Capke':-4},mod:{'Warcalde':-2,'Güemes':-4,'Capke':0},opt:{'Warcalde':2,'Güemes':0,'Capke':3}},
   deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),banco:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]}
 };
-let scen='mod', view='cons', localTab='Warcalde', chart, editable=false, corteMes=0;
+let scen='mod', view='cons', localTab='Warcalde', chart, editable=false, corteMes=0, corteView='cons';
 const SLBL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'};
 
 function gp(p){return p.split('.').reduce((o,k)=>o[k],state);}
@@ -425,13 +429,14 @@ function renderLocalTabs(){
   t.querySelectorAll('button').forEach(b=>b.onclick=function(){localTab=b.dataset.l;renderLocalTabs();buildLocalPanel();bindInputs(document.getElementById('localPanel'));});
 }
 
-function corteData(m){
+function corteData(m,onlyL){
   if(!state.corte||!state.share)return null;
-  var any=0;LOCALS.forEach(function(L){any+=(+state.corte[L].fact[m]||0);});
+  var any=0;LOCALS.forEach(function(L){if(onlyL&&L!==onlyL)return;any+=(+state.corte[L].fact[m]||0);});
   if(any<=0)return null;
   var real15=0,cmv15=0,esp15=0,cierreV=0,cierreCMV=0,regimp=0,fijos=0;var per=[];
   var sumCub15=0,sumAjustW=0;
   LOCALS.forEach(function(L){
+    if(onlyL&&L!==onlyL)return;
     var f15=+state.corte[L].fact[m]||0,cm15=+state.corte[L].cmv[m]||0,c15=+state.corte[L].cub[m]||0;
     var sh=(+state.share[L]||0)/100;
     var estV=projFact(scen,L,m);
@@ -448,7 +453,7 @@ function corteData(m){
   });
   var interes=state.deuda.invInt[m]*state.fx[scen];
   var resProy=cierreV-cierreCMV-regimp-fijos-interes;
-  var e=econ(scen,m,null,false);
+  var e=econ(scen,m,onlyL,false);
   var budCmvPct=e.ventas>0?e.cmv/e.ventas*100:0;
   return {m:m,per:per,real15:real15,cmv15:cmv15,esp15:esp15,cierreV:cierreV,cierreCMV:cierreCMV,
     regimp:regimp,fijos:fijos,interes:interes,resProy:resProy,
@@ -474,35 +479,42 @@ function buildCorteInputs(){
 }
 function renderCorteOut(){
   var out=document.getElementById('corteOut');if(!out)return;
-  var d=corteData(corteMes);
-  if(!d){out.innerHTML='<p class="sub" style="text-align:center;padding:18px 0">Cargá el corte del 1 al 15 de '+MESES[corteMes]+' (facturación, cubiertos y CMV) para ver el análisis.</p>';return;}
+  var onlyL=corteView==='cons'?null:corteView;var scope=onlyL?onlyL:'consolidado';
+  var d=corteData(corteMes,onlyL);
+  if(!d){out.innerHTML='<p class="sub" style="text-align:center;padding:18px 0">Cargá el corte del 1 al 15 de '+MESES[corteMes]+' ('+scope+') para ver el análisis.</p>';return;}
   var ritC=d.esp15>0?d.real15/d.esp15:0;
   var h='<div class="sct">Ritmo de ventas al 15</div><div class="scr"><table><thead><tr><th class="l">Local</th><th>Real 1–15</th><th>Esperado 1–15</th><th>Ritmo</th><th>Cierre proy.</th></tr></thead><tbody>';
   d.per.forEach(function(p){h+='<tr><td class="l">'+p.L+'</td><td class="mono">'+fmtM(p.f15)+'</td><td class="mono">'+fmtM(p.esp)+'</td><td class="mono '+(p.ritmo>=1?'pos':'neg')+'">'+fmtAR(p.ritmo*100,0)+'%</td><td class="mono">'+fmtM(p.cierre)+'</td></tr>';});
-  h+='<tr class="fin"><td class="l">Consolidado</td><td class="mono">'+fmtM(d.real15)+'</td><td class="mono">'+fmtM(d.esp15)+'</td><td class="mono '+(ritC>=1?'pos':'neg')+'">'+fmtAR(ritC*100,0)+'%</td><td class="mono">'+fmtM(d.cierreV)+'</td></tr></tbody></table></div>';
+  if(!onlyL)h+='<tr class="fin"><td class="l">Consolidado</td><td class="mono">'+fmtM(d.real15)+'</td><td class="mono">'+fmtM(d.esp15)+'</td><td class="mono '+(ritC>=1?'pos':'neg')+'">'+fmtAR(ritC*100,0)+'%</td><td class="mono">'+fmtM(d.cierreV)+'</td></tr>';
+  h+='</tbody></table></div>';
   h+='<div class="sct">Cubierto promedio al 15 · real vs ajustado por inflación</div><div class="scr"><table><thead><tr><th class="l">Local</th><th>Cubiertos</th><th>Prom. real</th><th>Prom. ajustado</th><th>Desvío</th></tr></thead><tbody>';
   d.per.forEach(function(p){var dv=p.promAjust>0?(p.promReal/p.promAjust-1)*100:0;h+='<tr><td class="l">'+p.L+'</td><td class="mono">'+fmtAR(p.cub15,0)+'</td><td class="mono">$'+fmtAR(p.promReal,0)+'</td><td class="mono">$'+fmtAR(p.promAjust,0)+'</td><td class="mono '+(dv<0?'neg':'pos')+'">'+(dv>=0?'+':'')+fmtAR(dv,1)+'%</td></tr>';});
-  var dvC=d.promAjustCons>0?(d.promRealCons/d.promAjustCons-1)*100:0;
-  h+='<tr class="fin"><td class="l">Consolidado</td><td class="mono">'+fmtAR(d.cub15Tot,0)+'</td><td class="mono">$'+fmtAR(d.promRealCons,0)+'</td><td class="mono">$'+fmtAR(d.promAjustCons,0)+'</td><td class="mono '+(dvC<0?'neg':'pos')+'">'+(dvC>=0?'+':'')+fmtAR(dvC,1)+'%</td></tr></tbody></table></div>';
-  h+='<div class="sct">Margen variable real al 15 · consolidado</div><div class="scr"><table><tbody>';
+  if(!onlyL){var dvC=d.promAjustCons>0?(d.promRealCons/d.promAjustCons-1)*100:0;h+='<tr class="fin"><td class="l">Consolidado</td><td class="mono">'+fmtAR(d.cub15Tot,0)+'</td><td class="mono">$'+fmtAR(d.promRealCons,0)+'</td><td class="mono">$'+fmtAR(d.promAjustCons,0)+'</td><td class="mono '+(dvC<0?'neg':'pos')+'">'+(dvC>=0?'+':'')+fmtAR(dvC,1)+'%</td></tr>';}
+  h+='</tbody></table></div>';
+  h+='<div class="sct">Margen variable real al 15 · '+scope+'</div><div class="scr"><table><tbody>';
   h+='<tr><td class="l">Ventas reales</td><td class="mono">'+fmtM(d.real15)+'</td></tr>';
   h+='<tr><td class="l">− CMV real</td><td class="mono">'+fmtM(d.cmv15)+'</td></tr>';
   h+='<tr class="fin"><td class="l">Margen variable</td><td class="mono">'+fmtM(d.margen15)+'</td></tr>';
   h+='<tr><td class="l note">Esperado al 15</td><td class="mono note">'+fmtM(d.espMargen15)+'</td></tr></tbody></table></div>';
   var cmvDelta=d.cmvPctReal-d.cmvPctBud;
   h+='<div class="cmvbox"><span>CMV real vs presupuesto</span><span class="mono '+(cmvDelta>0?'neg':'pos')+'">'+fmtAR(d.cmvPctBud,1)+'% → '+fmtAR(d.cmvPctReal,1)+'% · '+(cmvDelta>0?'+':'')+fmtAR(cmvDelta,1)+' pts</span></div>';
-  h+='<div class="sct">Cierre proyectado del mes · consolidado</div><div class="scr"><table><thead><tr><th class="l"></th><th>Proy. (ritmo real)</th><th>Estimado</th></tr></thead><tbody>';
+  h+='<div class="sct">Cierre proyectado del mes · '+scope+'</div><div class="scr"><table><thead><tr><th class="l"></th><th>Proy. (ritmo real)</th><th>Estimado</th></tr></thead><tbody>';
   var rows3=[['Ventas',d.cierreV,d.est.ventas,0],['− CMV',d.cierreCMV,d.est.cmv,0],['Margen variable',d.cierreV-d.cierreCMV,d.est.ventas-d.est.cmv,1],['− Reg/Imp/Mant',d.regimp,d.est.varOtros,0],['− Fijos del mes',d.fijos,d.est.fijos,0],['− Intereses',d.interes,d.est.interes,0],['Resultado',d.resProy,d.est.res,2]];
   rows3.forEach(function(r){var fin=r[3];h+='<tr'+(fin?' class="fin"':'')+'><td class="l">'+r[0]+'</td><td class="mono'+(fin===2?(r[1]<0?' neg':' pos'):'')+'">'+fmtM(r[1])+'</td><td class="mono note">'+fmtM(r[2])+'</td></tr>';});
   h+='<tr><td class="l note">Rentabilidad neta</td><td class="mono '+(d.rentProy<0?'neg':'pos')+'">'+fmtAR(d.rentProy,1)+'%</td><td class="mono note">'+fmtAR(d.rentEst,1)+'%</td></tr></tbody></table></div>';
   var rowsT='',anyT=false;
-  MESES.forEach(function(mz,mm){var dd=corteData(mm);if(!dd)return;anyT=true;var rit=dd.esp15>0?dd.real15/dd.esp15*100:0;var desv=dd.est.res!==0?(dd.resProy-dd.est.res)/Math.abs(dd.est.res)*100:0;rowsT+='<tr><td class="l">'+mz+'</td><td class="mono '+(rit>=100?'pos':'neg')+'">'+fmtAR(rit,0)+'%</td><td class="mono '+(dd.cmvPctReal>dd.cmvPctBud?'neg':'pos')+'">'+fmtAR(dd.cmvPctReal,1)+'%</td><td class="mono '+(dd.resProy<0?'neg':'pos')+'">'+fmtM(dd.resProy)+'</td><td class="mono '+(desv<0?'neg':'pos')+'">'+(desv>0?'+':'')+fmtAR(desv,0)+'%</td></tr>';});
-  h+='<div class="sct">Tendencia · meses con corte cargado</div>';
+  MESES.forEach(function(mz,mm){var dd=corteData(mm,onlyL);if(!dd)return;anyT=true;var rit=dd.esp15>0?dd.real15/dd.esp15*100:0;var desv=dd.est.res!==0?(dd.resProy-dd.est.res)/Math.abs(dd.est.res)*100:0;rowsT+='<tr><td class="l">'+mz+'</td><td class="mono '+(rit>=100?'pos':'neg')+'">'+fmtAR(rit,0)+'%</td><td class="mono '+(dd.cmvPctReal>dd.cmvPctBud?'neg':'pos')+'">'+fmtAR(dd.cmvPctReal,1)+'%</td><td class="mono '+(dd.resProy<0?'neg':'pos')+'">'+fmtM(dd.resProy)+'</td><td class="mono '+(desv<0?'neg':'pos')+'">'+(desv>0?'+':'')+fmtAR(desv,0)+'%</td></tr>';});
+  h+='<div class="sct">Tendencia · '+scope+' · meses con corte cargado</div>';
   if(anyT)h+='<div class="scr"><table><thead><tr><th class="l">Mes</th><th>Ritmo vtas.</th><th>CMV% real</th><th>Resultado proy.</th><th>vs estimado</th></tr></thead><tbody>'+rowsT+'</tbody></table></div>';
   else h+='<p class="note">Cargá cortes en varios meses para ver la tendencia.</p>';
   out.innerHTML=h;
 }
-function buildCorte(){buildCorteTabs();buildCorteShare();buildCorteInputs();renderCorteOut();}
+function buildCorteView(){
+  var opts=[['cons','Consolidado']].concat(LOCALS.map(function(L){return [L,L];}));
+  document.getElementById('corteViewTabs').innerHTML=opts.map(function(o){return '<button data-cv="'+o[0]+'"'+(o[0]===corteView?' class="on"':'')+'>'+o[1]+'</button>';}).join('');
+  document.querySelectorAll('#corteViewTabs button').forEach(function(b){b.onclick=function(){corteView=b.dataset.cv;document.querySelectorAll('#corteViewTabs button').forEach(function(x){x.classList.toggle('on',x===b);});renderCorteOut();};});
+}
+function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildCorteInputs();renderCorteOut();}
 function normalizar(){
   LOCALS.forEach(function(L){
     if(!state.costos||!state.costos[L])return;
