@@ -55,7 +55,7 @@
   .kpi .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);font-weight:600}
   .kpi .v{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums}
   .kpi .d{font-size:11px;color:var(--soft);margin-top:2px}
-  .pos{color:var(--green)}.neg{color:var(--red)}
+  .pos{color:var(--green)}.neg{color:var(--red)}.fib{color:var(--blue)}
   .gridc{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px 16px}
   .btn{border:1px solid var(--frame);background:#fff;color:var(--blue);border-radius:9px;padding:8px 14px;font-family:'Inter';font-size:12.5px;font-weight:600;cursor:pointer}
   .btn:hover{background:#F1F5FA}
@@ -190,7 +190,7 @@ const fmtP=v=>'$'+fmtAR(v,0);
 const fmtN=v=>fmtAR(v,0);
 
 let state={
-  cajaIni:50*M, lagCobro:0, lagProv:1, lagImp:1, cerrados:3,
+  cajaIni:50*M, lagCobro:0, lagProv:30, lagImp:30, lagUnit:'dias', cerrados:3,
   fx:{pes:1700,mod:1300,opt:1200},
   cmvStress:{pes:3,mod:0,opt:-1},
   inflacion:[30,28,26,22,18,14],
@@ -238,9 +238,9 @@ function bindInputs(root){(root||document).querySelectorAll('input[data-path]').
   if(el._b)return;el._b=true;
   el.addEventListener('input',function(){
     var caret=el.selectionStart,oldv=el.value;
-    var dl=(oldv.slice(0,caret).match(/[0-9]/g)||[]).length;
+    var dl=(oldv.slice(0,caret).match(/[0-9,]/g)||[]).length;
     var nv=liveFmt(oldv);el.value=nv;
-    var pos=0,seen=0;if(nv.charAt(0)==='-')pos=1;while(pos<nv.length&&seen<dl){if(/[0-9]/.test(nv.charAt(pos)))seen++;pos++;}
+    var pos=0,seen=0;if(nv.charAt(0)==='-')pos=1;while(pos<nv.length&&seen<dl){if(/[0-9,]/.test(nv.charAt(pos)))seen++;pos++;}
     try{el.setSelectionRange(pos,pos);}catch(e){}
     var raw=parseAR(nv);var val=raw==null?0:raw;if(el.dataset.money)val=val*M;
     sp(el.dataset.path,val);updateComputed();renderOutputs();guardarNube();
@@ -253,25 +253,33 @@ function cubAjust(L,m){return cubProm('hist',L,m)*(1+state.inflacion[m]/100);}
 function projFact(s,L,m){const P=cubAjust(L,m)*(1+state.pDelta[s][L]/100);const Q=state.hist[L].cub[m]*(1+state.qDelta[s][L]/100);return P*Q;}
 
 function econ(s,m,onlyL,useReal){
-  let ventas=0,cmv=0,reg=0,imp=0,mant=0,fijos=0;
+  let ventas=0,cmv=0,reg=0,imp=0,mant=0,sueldos=0,alquiler=0,servicios=0;
   LOCALS.forEach(function(L){
     if(onlyL&&L!==onlyL)return;
     const f=useReal?state.real[L].fact[m]:projFact(s,L,m);const c=state.costos[L];
     ventas+=f;cmv+=f*(c.cmv+state.cmvStress[s])/100;reg+=f*c.reg/100;imp+=f*c.imp/100;mant+=f*c.mant/100;
-    fijos+=c.sueldos[m]+c.alquiler[m]+c.servicios[m];
+    sueldos+=c.sueldos[m];alquiler+=c.alquiler[m];servicios+=c.servicios[m];
   });
+  const fijos=sueldos+alquiler+servicios;
   const interes=state.deuda.invInt[m]*state.fx[s];
-  return {ventas,cmv,varOtros:reg+imp+mant,fijos,interes,res:ventas-cmv-reg-imp-mant-fijos-interes};
+  return {ventas,cmv,varOtros:reg+imp+mant,sueldos,alquiler,servicios,fijos,interes,res:ventas-cmv-reg-imp-mant-fijos-interes};
+}
+function lagVal(s,m,onlyL,useReal,lag,key){
+  lag=+lag;if(!isFinite(lag)||lag<0)lag=0;
+  var lo=Math.floor(lag),hi=Math.ceil(lag),fr=lag-lo;
+  var mlo=Math.max(0,m-lo),mhi=Math.max(0,m-hi);
+  var vlo=econ(s,mlo,onlyL,useReal&&mlo<state.cerrados)[key];
+  var vhi=econ(s,mhi,onlyL,useReal&&mhi<state.cerrados)[key];
+  return vlo*(1-fr)+vhi*fr;
 }
 function cajaSerie(s,onlyL,useReal,untilClosed){
   const out=[];let acum=state.cajaIni;
   for(let m=0;m<6;m++){
     if(untilClosed&&m>=state.cerrados){out.push(null);continue;}
     const e=econ(s,m,onlyL,useReal&&m<state.cerrados);
-    const mc=Math.max(0,m-state.lagCobro),mp=Math.max(0,m-state.lagProv),mi=Math.max(0,m-state.lagImp);
-    const cobr=econ(s,mc,onlyL,useReal&&mc<state.cerrados).ventas;
-    const pagoCMV=econ(s,mp,onlyL,useReal&&mp<state.cerrados).cmv;
-    const pagoVar=econ(s,mi,onlyL,useReal&&mi<state.cerrados).varOtros;
+    const cobr=lagVal(s,m,onlyL,useReal,state.lagCobro/30,'ventas');
+    const pagoCMV=lagVal(s,m,onlyL,useReal,state.lagProv/30,'cmv');
+    const pagoVar=lagVal(s,m,onlyL,useReal,state.lagImp/30,'varOtros');
     const vtoInv=(state.deuda.invCap[m]+state.deuda.invInt[m])*state.fx[s];
     const deuda=state.deuda.fisco[m]+state.deuda.banco[m]+vtoInv;
     const flujo=cobr-pagoCMV-pagoVar-e.fijos-deuda;
@@ -281,7 +289,7 @@ function cajaSerie(s,onlyL,useReal,untilClosed){
 }
 
 function buildGlobals(){
-  const G=[['cajaIni','Caja inicial (1 jul) $',{dec:0}],['fx.pes','TC real · pesimista $/USD',{}],['fx.mod','TC real · moderado $/USD',{}],['fx.opt','TC real · optimista $/USD',{}],['lagCobro','Desfasaje cobro (meses)',{}],['lagProv','Plazo proveedores CMV (meses)',{}],['lagImp','Plazo impuestos (meses)',{}],['cerrados','Meses cerrados (real cargado)',{}]];
+  const G=[['cajaIni','Caja inicial (1 jul) $',{dec:0}],['fx.pes','TC real · pesimista $/USD',{}],['fx.mod','TC real · moderado $/USD',{}],['fx.opt','TC real · optimista $/USD',{}],['lagCobro','Desfasaje cobro (días)',{dec:0}],['lagProv','Plazo proveedores CMV (días)',{dec:0}],['lagImp','Plazo impuestos (días)',{dec:0}],['cerrados','Meses cerrados (real cargado)',{}]];
   document.getElementById('globals').innerHTML=G.map(g=>'<div><label class="f">'+g[1]+'</label>'+inp(g[0],g[2])+'</div>').join('');
 }
 function buildInf(){
@@ -348,11 +356,14 @@ function renderOutputs(){
   const faltas=serie.map((x,m)=>({x,m})).filter(o=>o.x.vtoInv>0&&o.x.acum<0).map(o=>MESES[o.m]);
   document.getElementById('integralNote').textContent=faltas.length?('En este escenario no llegás al vencimiento de '+faltas.join(', ')+'. Ahí tenés que renegociar plazo o quita, o conseguir fondeo antes.'):'En este escenario cubrís todos los vencimientos con inversores. Mirá igual el piso de caja: si queda muy fino, un imprevisto te complica.';
 
-  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Fijos','fijos',-1],['− Intereses','interes',-1]];
+  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Intereses','interes',-1]];
   let eb='';
   eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,false)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
-  let semRes=0;const rc=MESES.map(function(_,m){const rr=econ(scen,m,onlyL,false).res;semRes+=rr;return '<td class="mono '+(rr<0?'neg':'pos')+'">'+fmtM(rr)+'</td>';}).join('');
-  eb+='<tr class="fin"><td class="l">Resultado</td>'+rc+'<td class="mono '+(semRes<0?'neg':'pos')+'">'+fmtM(semRes)+'</td></tr>';
+  let semRes=0,semVts=0;const rc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);semRes+=e.res;semVts+=e.ventas;return '<td class="mono '+(e.res<0?'neg':'fib')+'">'+fmtM(e.res)+'</td>';}).join('');
+  eb+='<tr class="fin"><td class="l">Resultado</td>'+rc+'<td class="mono '+(semRes<0?'neg':'fib')+'">'+fmtM(semRes)+'</td></tr>';
+  const pc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);const p=e.ventas>0?e.res/e.ventas*100:0;return '<td class="mono '+(p<0?'neg':'fib')+'">'+fmtAR(p,1)+'%</td>';}).join('');
+  const semP=semVts>0?semRes/semVts*100:0;
+  eb+='<tr><td class="l">Rentabilidad neta %</td>'+pc+'<td class="mono '+(semP<0?'neg':'fib')+'">'+fmtAR(semP,1)+'%</td></tr>';
   document.getElementById('econBody').innerHTML=eb;
 
   const cs=cajaSerie(scen,onlyL,false);
@@ -402,6 +413,12 @@ function normalizar(){
       if(!Array.isArray(v)){state.costos[L][k]=[v,v,v,v,v,v];}
     });
   });
+  if(state.lagUnit!=='dias'){
+    state.lagCobro=Math.round((+state.lagCobro||0)*30);
+    state.lagProv=Math.round((+state.lagProv||0)*30);
+    state.lagImp=Math.round((+state.lagImp||0)*30);
+    state.lagUnit='dias';
+  }
 }
 function render(){
   normalizar();
