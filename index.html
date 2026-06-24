@@ -896,28 +896,37 @@ function renderCmvCompare(){
   var host=document.getElementById('cmvCompare');if(!host)return;
   var d=cmvYoY(cmvView);
   var anyReal=d.some(function(r){return r.hasReal;});
-  var vals=[];d.forEach(function(r){if(r.has25)vals.push(r.y25);if(r.hasReal)vals.push(r.y26);});
-  if(!vals.length)vals=[30,36];
-  var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals);
-  var yMax=Math.ceil(mx+1),yMin=Math.floor(mn-1);if(yMax-yMin<4)yMax=yMin+4;
-  var W=720,H=210,padL=40,padR=14,padT=16,padB=24,pw=W-padL-padR,ph=H-padT-padB,N=12;
-  function xOf(i){return padL+i*(pw/(N-1));}
-  function yOf(v){return padT+(yMax-v)/(yMax-yMin)*ph;}
-  var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
-  [yMax,(yMax+yMin)/2,yMin].forEach(function(g){var y=yOf(g);s+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--line)"/><text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="IBM Plex Mono" fill="var(--soft)">'+fmtAR(g,0)+'%</text>';});
-  var p='';d.forEach(function(r,i){if(r.has25){p+=(p===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y25).toFixed(1)+' ';}});
-  if(p)s+='<path d="'+p+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
-  var q='';d.forEach(function(r,i){if(r.hasReal){q+=(q===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y26).toFixed(1)+' ';}});
-  if(q)s+='<path d="'+q+'" fill="none" stroke="var(--red)" stroke-width="2.4"/>';
-  d.forEach(function(r,i){if(r.has25)s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y25).toFixed(1)+'" r="2.4" fill="#8a8a8a"/>';if(r.hasReal)s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y26).toFixed(1)+'" r="3" fill="var(--red)"/>';});
-  d.forEach(function(r,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+r.mes+'</text>';});
-  s+='</svg>';
-  var leg='<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid var(--red)"></span>2026</span></div>';
-  var tb='<div class="scr" style="margin-top:10px"><table><thead><tr><th class="l">Mes</th><th>CMV 2025</th><th>CMV 2026</th><th>Brecha</th></tr></thead><tbody>';
-  d.forEach(function(r){tb+='<tr><td class="l">'+r.mes+'</td><td class="mono">'+(r.has25?fmtAR(r.y25,1)+'%':'\u2014')+'</td>'+(r.hasReal?('<td class="mono">'+fmtAR(r.y26,1)+'%</td><td class="mono '+(r.gap>0?'neg':'pos')+'">'+(r.gap>0?'+':'')+fmtAR(r.gap,1)+'pp</td>'):'<td class="note">\u2014</td><td class="note">\u2014</td>')+'</tr>';});
+  function draw(get25,get26,color,withGap,goodUp){
+    var vals=[];d.forEach(function(r){var a=get25(r),b=get26(r);if(a!=null)vals.push(a);if(b!=null)vals.push(b);});
+    if(!vals.length)vals=[0,1];
+    var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals),yMax=Math.ceil(mx+1),yMin=Math.floor(mn-1);if(yMax-yMin<4)yMax=yMin+4;
+    var W=720,H=withGap?226:206,padL=40,padR=14,padT=20,padB=30,pw=W-padL-padR,ph=H-padT-padB,N=12;
+    function xOf(i){return padL+i*(pw/(N-1));}
+    function yOf(v){return padT+(yMax-v)/(yMax-yMin)*ph;}
+    var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
+    [yMax,(yMax+yMin)/2,yMin].forEach(function(g){var y=yOf(g);s+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--line)"/><text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="IBM Plex Mono" fill="var(--soft)">'+fmtAR(g,0)+'%</text>';});
+    var p='';d.forEach(function(r,i){var a=get25(r);if(a!=null){p+=(p===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(a).toFixed(1)+' ';}});
+    if(p)s+='<path d="'+p+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
+    var q='';d.forEach(function(r,i){var b=get26(r);if(b!=null){q+=(q===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(b).toFixed(1)+' ';}});
+    if(q)s+='<path d="'+q+'" fill="none" stroke="'+color+'" stroke-width="2.4"/>';
+    d.forEach(function(r,i){var a=get25(r);if(a!=null)s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(a).toFixed(1)+'" r="2.4" fill="#8a8a8a"/>';
+      var b=get26(r);if(b!=null){var cx=xOf(i),cy=yOf(b);s+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="3" fill="'+color+'"/>';
+        s+='<text x="'+cx.toFixed(1)+'" y="'+(cy-8).toFixed(1)+'" text-anchor="middle" font-size="8.5" font-family="IBM Plex Mono" fill="'+color+'">'+fmtAR(b,1)+'</text>';
+        if(withGap){var gap=b-a,gc=(goodUp?(gap>0):(gap<0))?'var(--green)':'var(--red)';s+='<text x="'+cx.toFixed(1)+'" y="'+(cy+15).toFixed(1)+'" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="'+gc+'">'+(gap>0?'+':'')+fmtAR(gap,1)+'pp</text>';}}});
+    d.forEach(function(r,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+r.mes+'</text>';});
+    return s+'</svg>';
+  }
+  var margSvg=draw(function(r){return r.has25?100-r.y25:null;},function(r){return r.hasReal?100-r.y26:null;},'var(--green)',false,true);
+  var cmvSvg=draw(function(r){return r.has25?r.y25:null;},function(r){return r.hasReal?r.y26:null;},'var(--red)',true,false);
+  function leg(c,gap){return '<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid '+c+'"></span>2026</span>'+(gap?'<span style="color:var(--red)">brecha en pp</span>':'')+'</div>';}
+  var worst=null;d.forEach(function(r){if(r.hasReal&&r.gap>0&&(!worst||r.gap>worst.gap))worst=r;});
+  var quien=cmvView==='cons'?'el grupo':cmvView;
+  var ins=worst?('<div style="margin-top:12px;padding:10px 12px;border-radius:9px;background:var(--redbg);font-size:12.5px;color:var(--text);line-height:1.5">En <b>'+worst.mes+'</b> '+quien+' tuvo un margen bruto de <b style="color:var(--green)">'+fmtAR(100-worst.y26,1)+'%</b> contra <b>'+fmtAR(100-worst.y25,1)+'%</b> en 2025 \u2014 un CMV de '+fmtAR(worst.y26,1)+'% (<b style="color:var(--red)">+'+fmtAR(worst.gap,1)+' pp</b> vs 2025). Si la carta acompa\u00f1\u00f3 a la inflaci\u00f3n, esos puntos son compra, merma, porci\u00f3n o mix \u2014 no precio.</div>'):'';
+  var tb='<div class="scr" style="margin-top:12px"><table><thead><tr><th class="l">Mes</th><th>CMV 2025</th><th>CMV 2026</th><th>Brecha</th><th>Margen 2026</th></tr></thead><tbody>';
+  d.forEach(function(r){tb+='<tr><td class="l">'+r.mes+'</td><td class="mono">'+(r.has25?fmtAR(r.y25,1)+'%':'\u2014')+'</td>'+(r.hasReal?('<td class="mono">'+fmtAR(r.y26,1)+'%</td><td class="mono '+(r.gap>0?'neg':'pos')+'">'+(r.gap>0?'+':'')+fmtAR(r.gap,1)+'pp</td><td class="mono">'+fmtAR(100-r.y26,1)+'%</td>'):'<td class="note">\u2014</td><td class="note">\u2014</td><td class="note">\u2014</td>')+'</tr>';});
   tb+='</tbody></table></div>';
-  var nota=anyReal?'':'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Carg\u00e1 el CMV % de 2026 en las grillas de arriba (1\u00ba sem ya disponible; 2\u00ba sem al cerrar cada mes) para ver la l\u00ednea roja y la brecha.</div>';
-  host.innerHTML='<div class="sct">Interanual \u00b7 2026 vs 2025 (a\u00f1o completo, mes a mes)</div>'+nota+leg+s+tb;
+  var nota=anyReal?'':'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Carg\u00e1 el CMV % de 2026 en las grillas de arriba (1\u00ba sem ya disponible; 2\u00ba sem al cerrar cada mes) para ver las l\u00edneas de 2026 y la brecha.</div>';
+  host.innerHTML='<div class="sct">Margen bruto % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+nota+leg('var(--green)',false)+margSvg+'<div class="sct" style="margin-top:16px">CMV % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+leg('var(--red)',true)+cmvSvg+ins+tb;
 }
 function buildDesvioView(){var el=document.getElementById("desvioViewTabs");if(!el)return;var opts=[["cons","Consolidado"]].concat(LOCALS.map(function(L){return [L,L];}));el.innerHTML=opts.map(function(o){return '<button data-dv="'+o[0]+'"'+(o[0]===desvioView?' class="on"':'')+'>'+o[1]+'</button>';}).join("");el.querySelectorAll("button").forEach(function(b){b.onclick=function(){desvioView=b.dataset.dv;el.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});renderOutputs();};});}
 function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildCorteInputs();renderCorteOut();}
