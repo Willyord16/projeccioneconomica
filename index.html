@@ -859,21 +859,18 @@ function renderSegChart(){
   host.querySelectorAll('#segMetricTabs button').forEach(function(b){b.onclick=function(){segMetric=b.dataset.sm;renderSegChart();};});
 }
 function cmvYoY(unit){
+  var MES12=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  function c26(L,i){return i<6?(+state.cmvHist[L][12+i]||0):(+state.cmvReal[L][i-6]||0);}
+  function w(L){var s=0,n=0;for(var k=0;k<6;k++){var f=state.hist[L].fact[k];if(f>0){s+=f;n++;}}return n>0?s/n:0;}
   var out=[];
-  for(var m=0;m<6;m++){
-    var y25,y26,closed=m<state.cerrados;
+  for(var i=0;i<12;i++){
+    var y25,y26;
     if(unit==='cons'){
       var n25=0,d25=0,n26=0,d26=0;
-      LOCALS.forEach(function(L){
-        var c25=(+state.cmvHist[L][6+m]||0),f25=state.hist[L].fact[m];if(c25>0&&f25>0){n25+=c25/100*f25;d25+=f25;}
-        if(closed){var c26=(+state.cmvReal[L][m]||0),f26=state.real[L].fact[m];if(c26>0&&f26>0){n26+=c26/100*f26;d26+=f26;}}
-      });
-      y25=d25>0?n25/d25*100:0;y26=(closed&&d26>0)?n26/d26*100:0;
-    }else{
-      y25=+state.cmvHist[unit][6+m]||0;
-      y26=closed?(+state.cmvReal[unit][m]||0):0;
-    }
-    out.push({mes:MESES[m],y25:y25,y26:y26,gap:y26-y25,hasReal:closed&&y26>0});
+      LOCALS.forEach(function(L){var ww=w(L);var a=+state.cmvHist[L][i]||0;if(a>0&&ww>0){n25+=a/100*ww;d25+=ww;}var b=c26(L,i);if(b>0&&ww>0){n26+=b/100*ww;d26+=ww;}});
+      y25=d25>0?n25/d25*100:0;y26=d26>0?n26/d26*100:0;
+    }else{y25=+state.cmvHist[unit][i]||0;y26=c26(unit,i);}
+    out.push({mes:MES12[i],y25:y25,y26:y26,gap:y26-y25,hasReal:y26>0,has25:y25>0});
   }
   return out;
 }
@@ -898,26 +895,29 @@ function buildCmvEntry(){
 function renderCmvCompare(){
   var host=document.getElementById('cmvCompare');if(!host)return;
   var d=cmvYoY(cmvView);
-  var vals=[];d.forEach(function(r){vals.push(r.y25);if(r.hasReal)vals.push(r.y26);});
-  var mx=Math.max.apply(null,vals.concat([1])),mn=Math.min.apply(null,vals.concat([mx]));
+  var anyReal=d.some(function(r){return r.hasReal;});
+  var vals=[];d.forEach(function(r){if(r.has25)vals.push(r.y25);if(r.hasReal)vals.push(r.y26);});
+  if(!vals.length)vals=[30,36];
+  var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals);
   var yMax=Math.ceil(mx+1),yMin=Math.floor(mn-1);if(yMax-yMin<4)yMax=yMin+4;
-  var W=720,H=200,padL=40,padR=16,padT=16,padB=24,pw=W-padL-padR,ph=H-padT-padB;
-  function xOf(i){return padL+i*(pw/5);}
+  var W=720,H=210,padL=40,padR=14,padT=16,padB=24,pw=W-padL-padR,ph=H-padT-padB,N=12;
+  function xOf(i){return padL+i*(pw/(N-1));}
   function yOf(v){return padT+(yMax-v)/(yMax-yMin)*ph;}
   var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
   [yMax,(yMax+yMin)/2,yMin].forEach(function(g){var y=yOf(g);s+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--line)"/><text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="IBM Plex Mono" fill="var(--soft)">'+fmtAR(g,0)+'%</text>';});
-  var p25='';d.forEach(function(r,i){p25+=(i===0?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y25).toFixed(1)+' ';});
-  s+='<path d="'+p25+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
-  var seg='';d.forEach(function(r,i){if(r.hasReal){seg+=(seg===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y26).toFixed(1)+' ';}});
-  if(seg)s+='<path d="'+seg+'" fill="none" stroke="var(--red)" stroke-width="2.4"/>';
-  d.forEach(function(r,i){s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y25).toFixed(1)+'" r="2.6" fill="#8a8a8a"/>';if(r.hasReal){s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y26).toFixed(1)+'" r="3.2" fill="var(--red)"/><text x="'+xOf(i).toFixed(1)+'" y="'+(yOf(r.y26)-7).toFixed(1)+'" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="var(--red)">'+fmtAR(r.y26,1)+'%</text>';}});
-  d.forEach(function(r,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="10.5" font-family="Inter" fill="var(--soft)">'+r.mes+'</text>';});
+  var p='';d.forEach(function(r,i){if(r.has25){p+=(p===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y25).toFixed(1)+' ';}});
+  if(p)s+='<path d="'+p+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
+  var q='';d.forEach(function(r,i){if(r.hasReal){q+=(q===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y26).toFixed(1)+' ';}});
+  if(q)s+='<path d="'+q+'" fill="none" stroke="var(--red)" stroke-width="2.4"/>';
+  d.forEach(function(r,i){if(r.has25)s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y25).toFixed(1)+'" r="2.4" fill="#8a8a8a"/>';if(r.hasReal)s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y26).toFixed(1)+'" r="3" fill="var(--red)"/>';});
+  d.forEach(function(r,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+r.mes+'</text>';});
   s+='</svg>';
-  var leg='<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid var(--red)"></span>2026 real</span></div>';
+  var leg='<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid var(--red)"></span>2026</span></div>';
   var tb='<div class="scr" style="margin-top:10px"><table><thead><tr><th class="l">Mes</th><th>CMV 2025</th><th>CMV 2026</th><th>Brecha</th></tr></thead><tbody>';
-  d.forEach(function(r){tb+='<tr><td class="l">'+r.mes+'</td><td class="mono">'+fmtAR(r.y25,1)+'%</td>'+(r.hasReal?('<td class="mono">'+fmtAR(r.y26,1)+'%</td><td class="mono '+(r.gap>0?'neg':'pos')+'">'+(r.gap>0?'+':'')+fmtAR(r.gap,1)+'pp</td>'):'<td class="note">\u2014</td><td class="note">\u2014</td>')+'</tr>';});
+  d.forEach(function(r){tb+='<tr><td class="l">'+r.mes+'</td><td class="mono">'+(r.has25?fmtAR(r.y25,1)+'%':'\u2014')+'</td>'+(r.hasReal?('<td class="mono">'+fmtAR(r.y26,1)+'%</td><td class="mono '+(r.gap>0?'neg':'pos')+'">'+(r.gap>0?'+':'')+fmtAR(r.gap,1)+'pp</td>'):'<td class="note">\u2014</td><td class="note">\u2014</td>')+'</tr>';});
   tb+='</tbody></table></div>';
-  host.innerHTML='<div class="sct">Interanual \u00b7 2026 vs mismo mes 2025</div>'+leg+s+tb;
+  var nota=anyReal?'':'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Carg\u00e1 el CMV % de 2026 en las grillas de arriba (1\u00ba sem ya disponible; 2\u00ba sem al cerrar cada mes) para ver la l\u00ednea roja y la brecha.</div>';
+  host.innerHTML='<div class="sct">Interanual \u00b7 2026 vs 2025 (a\u00f1o completo, mes a mes)</div>'+nota+leg+s+tb;
 }
 function buildDesvioView(){var el=document.getElementById("desvioViewTabs");if(!el)return;var opts=[["cons","Consolidado"]].concat(LOCALS.map(function(L){return [L,L];}));el.innerHTML=opts.map(function(o){return '<button data-dv="'+o[0]+'"'+(o[0]===desvioView?' class="on"':'')+'>'+o[1]+'</button>';}).join("");el.querySelectorAll("button").forEach(function(b){b.onclick=function(){desvioView=b.dataset.dv;el.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});renderOutputs();};});}
 function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildCorteInputs();renderCorteOut();}
