@@ -228,6 +228,14 @@
   <div class="eye" data-view="resultados">Punto de equilibrio por local <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card"><div id="beOut"></div></div>
 
+  <div class="eye" data-view="resultados">CMV % · interanual y carga real</div>
+  <div class="card">
+    <p class="sub">CMV % real de cada local: cargás el histórico (2025 + 1º sem 2026) y el real del 2º sem 2026 a medida que cerrás meses. Abajo lo comparás contra el mismo mes del año anterior.</p>
+    <div class="row" style="margin-bottom:10px;align-items:center;gap:9px"><span class="note" style="font-weight:600;color:var(--text)">Vista:</span><div class="tabs sm" id="cmvViewTabs"></div></div>
+    <div id="cmvEntry"></div>
+    <div id="cmvCompare" style="margin-top:14px"></div>
+  </div>
+
   <div class="eye" data-view="seguimiento">Corte al 15 · termómetro del mes <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card">
     <p class="sub">Cada mes, al día 15, cargás lo real del 1 al 15 (facturación, cubiertos y CMV) por local. El tablero calcula el ritmo, el margen real y proyecta el cierre, y lo compara contra el estimado del escenario activo. Los fijos del cierre salen de tu tabla de costos fijos —actualizalos con el real del mes.</p>
@@ -347,6 +355,7 @@ function cubProm(src,L,m){const c=state[src][L].cub[m];return c>0?state[src][L].
 function cubAjust(L,m){return cubProm('hist',L,m)*(1+state.inflacion[m]/100);}
 function projFact(s,L,m){const P=cubAjust(L,m)*(1+state.pDelta[s][L]/100);const Q=state.hist[L].cub[m]*(1+state.qDelta[s][L]/100);return P*Q;}
 
+function finInteresMes(onlyL){var out=[0,0,0,0,0,0];if(!state.cash||!state.cash.inicio)return out;var inicio=new Date(state.cash.inicio+'T00:00:00');if(isNaN(inicio.getTime()))return out;var by=inicio.getFullYear();(state.cash.financiaciones||[]).forEach(function(f){if(!(+f.tasa>0))return;if(onlyL&&f.unidad!==onlyL)return;var am=amortiza(f);am.rows.forEach(function(r,idx){var d;if(f.modo==='semanal'){var pr=Math.max(1,Math.round(+f.primera||1)),cada=Math.max(1,Math.round(+f.cada||4));var wk=(pr-1)+idx*cada;d=new Date(inicio.getTime());d.setDate(d.getDate()+wk*7);}else{var dia=Math.round(+f.dia||1);var fm=(dia>=inicio.getDate())?inicio.getMonth():inicio.getMonth()+1;var dt=new Date(by,fm+idx,1);var ld=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();dt.setDate(Math.min(dia,ld));d=dt;}if(d.getFullYear()===by){var mi=d.getMonth()-6;if(mi>=0&&mi<6)out[mi]+=r.interes;}});});return out;}
 function econ(s,m,onlyL,useReal){
   let ventas=0,cmv=0,reg=0,imp=0,mant=0,sueldos=0,alquiler=0,servicios=0;
   LOCALS.forEach(function(L){
@@ -357,7 +366,8 @@ function econ(s,m,onlyL,useReal){
   });
   const fijos=sueldos+alquiler+servicios;
   const interes=state.deuda.invInt[m]*state.fx[s];
-  return {ventas,cmv,varOtros:reg+imp+mant,sueldos,alquiler,servicios,fijos,interes,res:ventas-cmv-reg-imp-mant-fijos-interes};
+  const interesesFin=finInteresMes(onlyL)[m];
+  return {ventas,cmv,varOtros:reg+imp+mant,sueldos,alquiler,servicios,fijos,interes,interesesFin,res:ventas-cmv-reg-imp-mant-fijos-interes-interesesFin};
 }
 function lagVal(s,m,onlyL,useReal,lag,key){
   lag=+lag;if(!isFinite(lag)||lag<0)lag=0;
@@ -464,6 +474,7 @@ var cashView='cons';
 var desvioView='cons';
 var segMetric='fact';
 var segChartType='mensual';
+var cmvView='cons';
 var cashExpand={};
 var cashFold={};
 var CONCEPTOS=['Sueldos','Cargas sociales','Alquiler','Costos fijos de servicios','Impuestos (IVA/IIBB)','Proveedores / CMV','Honorarios','Comisiones','Servicios de deuda','Otros'];
@@ -478,7 +489,7 @@ function wkIdx(w,dt){for(var i=0;i<13;i++){var s=w[i],e=new Date(s);e.setDate(e.
 function monthDates(w,dia){var first=w[0],last=new Date(w[12]);last.setDate(last.getDate()+6);var y=first.getFullYear(),mo=first.getMonth(),res=[];dia=Math.round(+dia)||1;for(var k=0;k<5;k++){var dd=new Date(y,mo+k+1,0).getDate();var dt=new Date(y,mo+k,Math.min(dia,dd));if(dt>last)break;if(dt>=first)res.push(dt);}return res;}
 function amortiza(f){var C=+f.capital||0,i=(+f.tasa||0)/100,n=Math.max(1,Math.round(+f.n||1));var cuota=i>0?C*i/(1-Math.pow(1+i,-n)):C/n;var saldo=C,rows=[];for(var k=0;k<n;k++){var interes=saldo*i,capital=cuota-interes;saldo-=capital;rows.push({k:k+1,cuota:cuota,interes:interes,capital:capital,saldo:saldo>0?saldo:0});}return {cuota:cuota,n:n,rows:rows};}
 function finPlace(f,w){var am=amortiza(f),out=[];if(f.modo==='semanal'){var pr=Math.max(1,Math.round(+f.primera||1)),cada=Math.max(1,Math.round(+f.cada||4));am.rows.forEach(function(r,idx){var wi=(pr-1)+idx*cada;if(wi>=0&&wi<13)out.push({wi:wi,r:r});});}else{var ds=monthDates(w,+f.dia||1);am.rows.forEach(function(r,idx){if(idx<ds.length){var wi=wkIdx(w,ds[idx]);if(wi>=0)out.push({wi:wi,r:r});}});}return {am:am,place:out};}
-function recPlace(r,w){var out=[];if(r.modo==='semanal'){var de=Math.max(1,Math.round(+r.desde||1)),cada=Math.max(1,Math.round(+r.cada||4));for(var wi=de-1;wi<13;wi+=cada)if(wi>=0)out.push(wi);}else{monthDates(w,+r.dia||1).forEach(function(dt){var wi=wkIdx(w,dt);if(wi>=0)out.push(wi);});}return out;}
+function recPlace(r,w){var out=[];if(r.modo==='unico'){var sm=Math.max(1,Math.min(13,Math.round(+r.semana||1)));out.push(sm-1);return out;}if(r.modo==='mensual'){monthDates(w,+r.dia||1).forEach(function(dt){var wi=wkIdx(w,dt);if(wi>=0)out.push(wi);});return out;}var de=Math.max(1,Math.round(+r.desde||1)),cada=Math.max(1,Math.round(+r.cada||4));for(var wi=de-1;wi<13;wi+=cada)if(wi>=0)out.push(wi);return out;}
 function caIni(unit){var u=state.cash.cajaIniU||{};if(unit==='cons'){var s=0;LOCALS.forEach(function(L){s+=(+u[L]||0);});return s;}return +u[unit]||0;}
 function matchU(x,unit){return unit==='cons'||x.unidad===unit;}
 function lblLine(con,uni,unit){return esc(con||'—')+(unit==='cons'&&uni?(' · '+esc(uni)):'');}
@@ -561,8 +572,8 @@ h+='<div class="sct" data-fold="rec" style="cursor:pointer;margin-top:18px"><spa
 h+='<div><label class="f">Concepto</label>'+selOpts('cash.recurrentes.'+ri+'.concepto',r.concepto,CONCEPTOS)+'</div>';
 h+='<div><label class="f">Unidad</label>'+selOpts('cash.recurrentes.'+ri+'.unidad',r.unidad,LOCALS)+'</div>';
 h+='<div><label class="f">Monto $</label>'+inpW('cash.recurrentes.'+ri+'.monto')+'</div>';
-h+='<div><label class="f">Frecuencia</label><select class="mini" data-mpath="cash.recurrentes.'+ri+'.modo"><option value="semanal"'+(r.modo!=='mensual'?' selected':'')+'>cada N semanas</option><option value="mensual"'+(r.modo==='mensual'?' selected':'')+'>día del mes</option></select></div>';
-if(r.modo==='mensual'){h+='<div><label class="f">Día</label>'+inpWn('cash.recurrentes.'+ri+'.dia')+'</div>';}else{h+='<div><label class="f">Cada (sem)</label>'+inpWn('cash.recurrentes.'+ri+'.cada')+'</div><div><label class="f">Desde sem</label>'+inpWn('cash.recurrentes.'+ri+'.desde')+'</div>';}
+h+='<div><label class="f">Frecuencia</label><select class="mini" data-mpath="cash.recurrentes.'+ri+'.modo"><option value="semanal"'+((!r.modo||r.modo==='semanal')?' selected':'')+'>cada N semanas</option><option value="mensual"'+(r.modo==='mensual'?' selected':'')+'>día del mes</option><option value="unico"'+(r.modo==='unico'?' selected':'')+'>única (pago puntual)</option></select></div>';
+if(r.modo==='unico'){h+='<div><label class="f">Semana (1-13)</label>'+inpWn('cash.recurrentes.'+ri+'.semana')+'</div>';}else if(r.modo==='mensual'){h+='<div><label class="f">Día</label>'+inpWn('cash.recurrentes.'+ri+'.dia')+'</div>';}else{h+='<div><label class="f">Cada (sem)</label>'+inpWn('cash.recurrentes.'+ri+'.cada')+'</div><div><label class="f">Desde sem</label>'+inpWn('cash.recurrentes.'+ri+'.desde')+'</div>';}
 h+='<button class="delx" data-del="rec|'+ri+'">Quitar</button></div></div>';});
 h+='<button class="cashbtn" data-add="rec">+ egreso recurrente</button>';}
 h+='<div class="sct" data-fold="fin" style="cursor:pointer;margin-top:18px"><span style="display:inline-block;width:12px;color:var(--gold)">'+(cashFold['fin']?'\u25b8':'\u25be')+'</span>Financiaciones \u00b7 se amortizan solas (cuota + inter\u00e9s + capital)</div>';if(!cashFold['fin']){
@@ -619,7 +630,7 @@ function renderOutputs(){
   const faltas=serie.map((x,m)=>({x,m})).filter(o=>o.x.vtoInv>0&&o.x.acum<0).map(o=>MESES[o.m]);
   document.getElementById('integralNote').textContent=faltas.length?('En este escenario no llegás al vencimiento de '+faltas.join(', ')+'. Ahí tenés que renegociar plazo o quita, o conseguir fondeo antes.'):'En este escenario cubrís todos los vencimientos con inversores. Mirá igual el piso de caja: si queda muy fino, un imprevisto te complica.';
 
-  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Intereses','interes',-1]];
+  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Intereses inversores','interes',-1],['− Intereses financiaciones','interesesFin',-1]];
   let eb='';
   eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,false)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
   let semRes=0,semVts=0;const rc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);semRes+=e.res;semVts+=e.ventas;return '<td class="mono '+(e.res<0?'neg':'pos')+'">'+fmtM(e.res)+'</td>';}).join('');
@@ -643,7 +654,7 @@ function renderOutputs(){
     return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="mono">'+fmtM(realF)+'</td><td class="mono">'+fmtN(estC)+'</td><td class="mono">'+fmtN(realC)+'</td><td class="mono '+(dev<0?'neg':'pos')+'">'+(dev>=0?'+':'')+fmtAR(dev,0)+'%</td><td class="mono">'+fmtM(t25)+'</td><td class="mono">'+fmtM(taj)+'</td><td class="mono">'+fmtM(t26)+'</td><td class="mono '+(rvi<0?'neg':'pos')+'">'+(rvi>=0?'+':'')+fmtAR(rvi,0)+'%</td></tr>';
   }).join('');
 
-  drawChart();renderCorteOut();renderBreakeven();var _bms=document.getElementById('beMesSel');if(_bms)_bms.onchange=function(){state.beMes=+_bms.value;renderOutputs();guardarNube();};renderCashOut();renderSegChart();
+  drawChart();renderCorteOut();renderBreakeven();var _bms=document.getElementById('beMesSel');if(_bms)_bms.onchange=function(){state.beMes=+_bms.value;renderOutputs();guardarNube();};renderCashOut();renderSegChart();renderCmvCompare();
 }
 
 function drawChart(){
@@ -847,6 +858,67 @@ function renderSegChart(){
   host.querySelectorAll('#segTypeTabs button').forEach(function(b){b.onclick=function(){segChartType=b.dataset.st;renderSegChart();};});
   host.querySelectorAll('#segMetricTabs button').forEach(function(b){b.onclick=function(){segMetric=b.dataset.sm;renderSegChart();};});
 }
+function cmvYoY(unit){
+  var out=[];
+  for(var m=0;m<6;m++){
+    var y25,y26,closed=m<state.cerrados;
+    if(unit==='cons'){
+      var n25=0,d25=0,n26=0,d26=0;
+      LOCALS.forEach(function(L){
+        var c25=(+state.cmvHist[L][6+m]||0),f25=state.hist[L].fact[m];if(c25>0&&f25>0){n25+=c25/100*f25;d25+=f25;}
+        if(closed){var c26=(+state.cmvReal[L][m]||0),f26=state.real[L].fact[m];if(c26>0&&f26>0){n26+=c26/100*f26;d26+=f26;}}
+      });
+      y25=d25>0?n25/d25*100:0;y26=(closed&&d26>0)?n26/d26*100:0;
+    }else{
+      y25=+state.cmvHist[unit][6+m]||0;
+      y26=closed?(+state.cmvReal[unit][m]||0):0;
+    }
+    out.push({mes:MESES[m],y25:y25,y26:y26,gap:y26-y25,hasReal:closed&&y26>0});
+  }
+  return out;
+}
+function buildCmvView(){
+  var el=document.getElementById('cmvViewTabs');if(!el)return;
+  var opts=[['cons','Consolidado']].concat(LOCALS.map(function(L){return [L,L];}));
+  el.innerHTML=opts.map(function(o){return '<button data-cv="'+o[0]+'"'+(o[0]===cmvView?' class="on"':'')+'>'+o[1]+'</button>';}).join('');
+  el.querySelectorAll('button').forEach(function(b){b.onclick=function(){cmvView=b.dataset.cv;el.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});buildCmvEntry();bindInputs(document);renderOutputs();};});
+}
+function buildCmvEntry(){
+  var host=document.getElementById('cmvEntry');if(!host)return;
+  if(cmvView==='cons'){host.innerHTML='<p class="note">Eleg\u00ed un local arriba para cargar sus valores de CMV %. En Consolidado solo ves la comparaci\u00f3n (ponderada por ventas).</p>';return;}
+  var L=cmvView,M12=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  function tbl(titulo,cols,paths){var h='<div class="scr" style="margin-top:8px"><table><thead><tr><th class="l">'+titulo+'</th>'+cols.map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr></thead><tbody><tr><td class="l">CMV %</td>'+paths.map(function(p){return '<td>'+inp(p,{dec:1})+'</td>';}).join('')+'</tr></tbody></table></div>';return h;}
+  var h='<div class="sct">CMV % real por mes \u00b7 '+L+'</div>';
+  h+='<p class="note">Cargá el CMV % efectivo de cada mes. 2025 completo y 1\u00ba semestre 2026 es tu base hist\u00f3rica. El 2\u00ba semestre 2026 lo vas cargando al cerrar cada mes; el panel de abajo solo usa los meses cerrados.</p>';
+  h+=tbl('2025',M12,M12.map(function(_,i){return 'cmvHist.'+L+'.'+i;}));
+  h+=tbl('2026 \u00b7 1\u00ba sem',M12.slice(0,6),[12,13,14,15,16,17].map(function(i){return 'cmvHist.'+L+'.'+i;}));
+  h+=tbl('2026 \u00b7 2\u00ba sem (real, al cerrar)',MESES,MESES.map(function(_,m){return 'cmvReal.'+L+'.'+m;}));
+  host.innerHTML=h;
+}
+function renderCmvCompare(){
+  var host=document.getElementById('cmvCompare');if(!host)return;
+  var d=cmvYoY(cmvView);
+  var vals=[];d.forEach(function(r){vals.push(r.y25);if(r.hasReal)vals.push(r.y26);});
+  var mx=Math.max.apply(null,vals.concat([1])),mn=Math.min.apply(null,vals.concat([mx]));
+  var yMax=Math.ceil(mx+1),yMin=Math.floor(mn-1);if(yMax-yMin<4)yMax=yMin+4;
+  var W=720,H=200,padL=40,padR=16,padT=16,padB=24,pw=W-padL-padR,ph=H-padT-padB;
+  function xOf(i){return padL+i*(pw/5);}
+  function yOf(v){return padT+(yMax-v)/(yMax-yMin)*ph;}
+  var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
+  [yMax,(yMax+yMin)/2,yMin].forEach(function(g){var y=yOf(g);s+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--line)"/><text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="IBM Plex Mono" fill="var(--soft)">'+fmtAR(g,0)+'%</text>';});
+  var p25='';d.forEach(function(r,i){p25+=(i===0?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y25).toFixed(1)+' ';});
+  s+='<path d="'+p25+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
+  var seg='';d.forEach(function(r,i){if(r.hasReal){seg+=(seg===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(r.y26).toFixed(1)+' ';}});
+  if(seg)s+='<path d="'+seg+'" fill="none" stroke="var(--red)" stroke-width="2.4"/>';
+  d.forEach(function(r,i){s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y25).toFixed(1)+'" r="2.6" fill="#8a8a8a"/>';if(r.hasReal){s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(r.y26).toFixed(1)+'" r="3.2" fill="var(--red)"/><text x="'+xOf(i).toFixed(1)+'" y="'+(yOf(r.y26)-7).toFixed(1)+'" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="var(--red)">'+fmtAR(r.y26,1)+'%</text>';}});
+  d.forEach(function(r,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="10.5" font-family="Inter" fill="var(--soft)">'+r.mes+'</text>';});
+  s+='</svg>';
+  var leg='<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid var(--red)"></span>2026 real</span></div>';
+  var tb='<div class="scr" style="margin-top:10px"><table><thead><tr><th class="l">Mes</th><th>CMV 2025</th><th>CMV 2026</th><th>Brecha</th></tr></thead><tbody>';
+  d.forEach(function(r){tb+='<tr><td class="l">'+r.mes+'</td><td class="mono">'+fmtAR(r.y25,1)+'%</td>'+(r.hasReal?('<td class="mono">'+fmtAR(r.y26,1)+'%</td><td class="mono '+(r.gap>0?'neg':'pos')+'">'+(r.gap>0?'+':'')+fmtAR(r.gap,1)+'pp</td>'):'<td class="note">\u2014</td><td class="note">\u2014</td>')+'</tr>';});
+  tb+='</tbody></table></div>';
+  host.innerHTML='<div class="sct">Interanual \u00b7 2026 vs mismo mes 2025</div>'+leg+s+tb;
+}
 function buildDesvioView(){var el=document.getElementById("desvioViewTabs");if(!el)return;var opts=[["cons","Consolidado"]].concat(LOCALS.map(function(L){return [L,L];}));el.innerHTML=opts.map(function(o){return '<button data-dv="'+o[0]+'"'+(o[0]===desvioView?' class="on"':'')+'>'+o[1]+'</button>';}).join("");el.querySelectorAll("button").forEach(function(b){b.onclick=function(){desvioView=b.dataset.dv;el.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});renderOutputs();};});}
 function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildCorteInputs();renderCorteOut();}
 function normalizar(){
@@ -872,6 +944,8 @@ function normalizar(){
   });
   if(!state.aguinaldo)state.aguinaldo={};
   LOCALS.forEach(function(L){if(!Array.isArray(state.aguinaldo[L]))state.aguinaldo[L]=[0,0,0,0,0,0];});
+  if(!state.cmvHist)state.cmvHist={};if(!state.cmvReal)state.cmvReal={};
+  LOCALS.forEach(function(L){var base=(state.costos&&state.costos[L]?+state.costos[L].cmv:0)||0;if(!Array.isArray(state.cmvHist[L])||state.cmvHist[L].length!==18)state.cmvHist[L]=Array(18).fill(base);if(!Array.isArray(state.cmvReal[L])||state.cmvReal[L].length!==6)state.cmvReal[L]=Array(6).fill(base);});
   if(!state.cash)state.cash={};
   var _cs=state.cash;
   if(!_cs.cajaIniU){
@@ -921,7 +995,7 @@ function render(){
   normalizar();
   document.querySelectorAll('#scenTabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===scen));
   document.getElementById('scenLbl').textContent=SLBL[scen];
-  buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();buildCorte();buildDesvioView();
+  buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();buildCorte();buildDesvioView();buildCmvView();buildCmvEntry();
   buildCash();bindInputs(document);bindCash(document);renderOutputs();setView(curView);
 }
 
