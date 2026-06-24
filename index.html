@@ -32,6 +32,7 @@
   .sub{font-size:12.5px;color:var(--soft);margin:0 0 14px}
   label.f{display:block;font-size:11.5px;color:var(--soft);font-weight:500;margin-bottom:4px}
   input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);background:#fff;text-align:right}
+  .finbox .scr table input[type=text]{min-width:100px;font-size:12px;padding:6px 6px}
   input:focus{outline:none;border-color:var(--frame);box-shadow:0 0 0 3px rgba(46,92,160,.14)}
   table{border-collapse:collapse;width:100%;font-size:12.5px}
   th,td{padding:6px 7px;text-align:right;white-space:nowrap}
@@ -227,13 +228,6 @@
   <div class="eye" data-view="resultados">Punto de equilibrio por local <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card"><div id="beOut"></div></div>
 
-  <div class="eye" data-view="seguimiento">Estimado vs real · desvío</div>
-  <div class="card">
-    <p class="sub">El estimado queda congelado (escenario activo). Al cerrar cada mes cargás el real arriba y acá ves el desvío.</p>
-    <div class="scr"><table><thead><tr><th class="l">Mes</th><th>Fact. estimada</th><th>Fact. real</th><th>Cub. estim.</th><th>Cub. real</th><th>Desvío fact.</th></tr></thead>
-    <tbody id="desvioBody"></tbody></table></div>
-  </div>
-
   <div class="eye" data-view="seguimiento">Corte al 15 · termómetro del mes <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card">
     <p class="sub">Cada mes, al día 15, cargás lo real del 1 al 15 (facturación, cubiertos y CMV) por local. El tablero calcula el ritmo, el margen real y proyecta el cierre, y lo compara contra el estimado del escenario activo. Los fijos del cierre salen de tu tabla de costos fijos —actualizalos con el real del mes.</p>
@@ -248,6 +242,16 @@
     <div class="scr" id="corteShare" style="margin-bottom:16px"></div>
     <div class="scr" id="corteInputs" style="margin-bottom:6px"></div>
     <div id="corteOut"></div>
+  </div>
+
+  <div class="eye" data-view="seguimiento">Estimado vs real · desvío</div>
+  <div class="card">
+    <p class="sub">El estimado queda congelado (escenario activo). Al cerrar cada mes cargás el real arriba y acá ves el desvío.</p>
+    <div class="row" style="margin-bottom:12px;align-items:center;gap:9px"><span class="note" style="font-weight:600;color:var(--text)">Vista:</span><div class="tabs sm" id="desvioViewTabs"></div></div>
+    <div class="sct" style="margin-top:2px">Comparativo dinámico</div>
+    <div id="segChart" style="margin-bottom:14px"></div>
+    <div class="scr"><table><thead><tr><th class="l">Mes</th><th>Fact. estimada</th><th>Fact. real</th><th>Cubiertos est.</th><th>Cubiertos real</th><th>Desvío fact.</th><th>Cub.prom '25</th><th>Ajustado infl.</th><th>Cub.prom '26</th><th>Real vs infl.</th></tr></thead>
+    <tbody id="desvioBody"></tbody></table></div>
   </div>
 
 </div>
@@ -427,7 +431,7 @@ function updateComputed(){
 }
 
 function mvPct(L){var c=state.costos[L];var v=(c.cmv+state.cmvStress[scen]+c.reg+c.imp+c.mant)/100;return 1-v;}
-function beRefMonth(){var c=+state.cerrados;if(!isFinite(c)||c<1)c=1;if(c>6)c=6;return c-1;}
+function beRefMonth(){var m=state.beMes;if(m!=null&&m>=0&&m<6)return +m;var c=+state.cerrados;if(!isFinite(c)||c<1)c=1;if(c>6)c=6;return c-1;}
 function renderBreakeven(){
   var out=document.getElementById('beOut');if(!out)return;
   var rm=beRefMonth();
@@ -448,7 +452,7 @@ function renderBreakeven(){
   var segC=totVen>0?(totVen-totBE)/totVen*100:0;
   var segCcell='<span class="pill '+(segC>=0?'pg':'pd')+'">'+(segC>=0?'+':'')+fmtAR(segC,0)+'%</span>';
   rows+='<tr class="fin"><td class="l">Consolidado</td><td class="mono">'+fmtM(totFij)+'</td><td class="mono">—</td><td class="mono">'+fmtM(totBE)+'</td><td class="mono">'+fmtN(totCub)+'</td><td class="mono">'+fmtM(totVen)+'</td><td>'+segCcell+'</td></tr>';
-  var h='<p class="sub">Piso de facturación de cada local: <b>fijos recurrentes ÷ margen variable %</b>. Fijos tomados del último mes cerrado (<b>'+MESES[rm]+'</b>), descontando el aguinaldo para que el piso sea el de un mes normal. Margen variable = 1 − (CMV + reg + imp + mant). Ventas = real del último mes cerrado (estimado si aún no lo cargaste). Verde: estás arriba del piso; rojo: perdés plata.</p>';
+  var h='<div class="row" style="margin-bottom:12px;gap:9px;align-items:center;flex-wrap:wrap"><span class="note" style="font-weight:600;color:var(--text)">Mes de referencia (fijos reales):</span><select class="mini" id="beMesSel">'+MESES.map(function(_mz,_mi){return '<option value="'+_mi+'"'+(_mi===rm?' selected':'')+'>'+_mz+'</option>';}).join('')+'</select> <span class="note">— de ac\u00e1 salen los fijos del piso</span></div><p class="sub">Piso de facturación de cada local: <b>fijos recurrentes ÷ margen variable %</b>. Fijos tomados del último mes cerrado (<b>'+MESES[rm]+'</b>), descontando el aguinaldo para que el piso sea el de un mes normal. Margen variable = 1 − (CMV + reg + imp + mant). Ventas = real del último mes cerrado (estimado si aún no lo cargaste). Verde: estás arriba del piso; rojo: perdés plata.</p>';
   h+='<div class="scr"><table><thead><tr><th class="l">Local</th><th>Fijos recurrentes</th><th>Margen var.</th><th>Equilibrio ($)</th><th>Equilibrio (cub.)</th><th>Ventas ('+MESES[rm]+')</th><th>Margen seg.</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   var notas='';
   MESES.forEach(function(mz,m){LOCALS.forEach(function(L){var a=(state.aguinaldo&&state.aguinaldo[L])?(+state.aguinaldo[L][m]||0):0;if(a>0){var mv=mvPct(L);var ex=mv>0?a/mv:0;notas+='<tr><td class="l">'+mz+' · '+L+'</td><td class="mono">'+fmtM(a)+'</td><td class="mono">'+fmtM(ex)+'</td></tr>';}});});
@@ -457,6 +461,9 @@ function renderBreakeven(){
 }
 
 var cashView='cons';
+var desvioView='cons';
+var segMetric='fact';
+var segChartType='mensual';
 var cashExpand={};
 var cashFold={};
 var CONCEPTOS=['Sueldos','Cargas sociales','Alquiler','Costos fijos de servicios','Impuestos (IVA/IIBB)','Proveedores / CMV','Honorarios','Comisiones','Servicios de deuda','Otros'];
@@ -628,14 +635,15 @@ function renderOutputs(){
   document.getElementById('cashBody').innerHTML=cb;
 
   document.getElementById('desvioBody').innerHTML=MESES.map(function(mes,m){
-    const closed=m<state.cerrados;let estF=0,estC=0,realF=0,realC=0;
-    LOCALS.forEach(function(L){estF+=projFact(scen,L,m);estC+=state.hist[L].cub[m]*(1+state.qDelta[scen][L]/100);realF+=state.real[L].fact[m];realC+=state.real[L].cub[m];});
-    if(!closed)return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="note">pendiente</td><td class="mono">'+fmtN(estC)+'</td><td class="note">—</td><td class="note">—</td></tr>';
+    const closed=m<state.cerrados;let estF=0,estC=0,realF=0,realC=0,histF=0,histC=0;
+    LOCALS.forEach(function(L){if(desvioView!=="cons"&&L!==desvioView)return;estF+=projFact(scen,L,m);estC+=state.hist[L].cub[m]*(1+state.qDelta[scen][L]/100);realF+=state.real[L].fact[m];realC+=state.real[L].cub[m];histF+=state.hist[L].fact[m];histC+=state.hist[L].cub[m];});
+    const t25=histC>0?histF/histC:0;const taj=t25*(1+(+state.inflacion[m]||0)/100);const t26=realC>0?realF/realC:0;const rvi=(taj>0&&t26>0)?(t26/taj-1)*100:0;
+    if(!closed)return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="note">pendiente</td><td class="mono">'+fmtN(estC)+'</td><td class="note">—</td><td class="note">—</td><td class="mono">'+fmtM(t25)+'</td><td class="mono">'+fmtM(taj)+'</td><td class="note">—</td><td class="note">—</td></tr>';
     const dev=estF>0?(realF/estF-1)*100:0;
-    return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="mono">'+fmtM(realF)+'</td><td class="mono">'+fmtN(estC)+'</td><td class="mono">'+fmtN(realC)+'</td><td class="mono '+(dev<0?'neg':'pos')+'">'+(dev>=0?'+':'')+fmtAR(dev,0)+'%</td></tr>';
+    return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="mono">'+fmtM(realF)+'</td><td class="mono">'+fmtN(estC)+'</td><td class="mono">'+fmtN(realC)+'</td><td class="mono '+(dev<0?'neg':'pos')+'">'+(dev>=0?'+':'')+fmtAR(dev,0)+'%</td><td class="mono">'+fmtM(t25)+'</td><td class="mono">'+fmtM(taj)+'</td><td class="mono">'+fmtM(t26)+'</td><td class="mono '+(rvi<0?'neg':'pos')+'">'+(rvi>=0?'+':'')+fmtAR(rvi,0)+'%</td></tr>';
   }).join('');
 
-  drawChart();renderCorteOut();renderBreakeven();renderCashOut();
+  drawChart();renderCorteOut();renderBreakeven();var _bms=document.getElementById('beMesSel');if(_bms)_bms.onchange=function(){state.beMes=+_bms.value;renderOutputs();guardarNube();};renderCashOut();renderSegChart();
 }
 
 function drawChart(){
@@ -746,6 +754,100 @@ function buildCorteView(){
   document.getElementById('corteViewTabs').innerHTML=opts.map(function(o){return '<button data-cv="'+o[0]+'"'+(o[0]===corteView?' class="on"':'')+'>'+o[1]+'</button>';}).join('');
   document.querySelectorAll('#corteViewTabs button').forEach(function(b){b.onclick=function(){corteView=b.dataset.cv;document.querySelectorAll('#corteViewTabs button').forEach(function(x){x.classList.toggle('on',x===b);});renderCorteOut();};});
 }
+function segData(){
+  var infl=state.inflacion||[];var est=[],real=[],adjF=[],histC=[],realC=[];
+  for(var m=0;m<6;m++){var e=0,r=0,aF=0,hC=0,rC=0;
+    LOCALS.forEach(function(L){if(desvioView!=='cons'&&L!==desvioView)return;
+      e+=projFact(scen,L,m);r+=state.real[L].fact[m];aF+=state.hist[L].fact[m]*(1+(+infl[m]||0)/100);hC+=state.hist[L].cub[m];rC+=state.real[L].cub[m];});
+    est.push(e);real.push(r);adjF.push(aF);histC.push(hC);realC.push(rC);}
+  return {est:est,real:real,adjF:adjF,histC:histC,realC:realC,nC:Math.max(0,Math.min(6,+state.cerrados||0))};
+}
+function segBarsSvg(d,isFact){
+  var rows=MESES.map(function(mes,m){var base=isFact?d.est[m]:(d.histC[m]>0?d.adjF[m]/d.histC[m]:0);var real=isFact?d.real[m]:(d.realC[m]>0?d.real[m]/d.realC[m]:0);return {mes:mes,base:base,real:real,hasReal:(m<d.nC)&&real>0};});
+  var vmax=0;rows.forEach(function(r){vmax=Math.max(vmax,r.base,r.hasReal?r.real:0);});if(vmax<=0)vmax=1;
+  var W=720,H=210,padL=14,padR=14,padT=22,padB=26,pw=W-padL-padR,ph=H-padT-padB,slotW=pw/6;
+  function lab(v){return isFact?('$'+(v/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+'M'):('$'+Math.round(v).toLocaleString('es-AR'));}
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
+  svg+='<line x1="'+padL+'" y1="'+(padT+ph)+'" x2="'+(W-padR)+'" y2="'+(padT+ph)+'" stroke="var(--line)"/>';
+  rows.forEach(function(r,i){var sx=padL+i*slotW,bw=slotW*0.28,x1=sx+slotW*0.16,x2=sx+slotW*0.52,h1=r.base/vmax*ph,y1=padT+ph-h1;
+    svg+='<rect x="'+x1.toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h1).toFixed(1)+'" rx="2" fill="#A9BBD0"/>';
+    svg+='<text x="'+(x1+bw/2).toFixed(1)+'" y="'+(y1-4).toFixed(1)+'" text-anchor="middle" font-size="8.5" font-family="IBM Plex Mono" fill="var(--soft)">'+lab(r.base)+'</text>';
+    if(r.hasReal){var h2=r.real/vmax*ph,y2=padT+ph-h2,col=r.real>=r.base?'var(--green)':'var(--red)';
+      svg+='<rect x="'+x2.toFixed(1)+'" y="'+y2.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h2).toFixed(1)+'" rx="2" fill="'+col+'"/>';
+      svg+='<text x="'+(x2+bw/2).toFixed(1)+'" y="'+(y2-4).toFixed(1)+'" text-anchor="middle" font-size="8.5" font-family="IBM Plex Mono" fill="'+col+'">'+lab(r.real)+'</text>';}
+    svg+='<text x="'+(sx+slotW/2).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10.5" font-family="Inter" fill="var(--soft)">'+r.mes+'</text>';});
+  return svg+'</svg>';
+}
+function segLineSvg(d,isFact){
+  var nC=d.nC;
+  if(nC<1)return '<div class="note" style="padding:26px 8px;text-align:center">Sin meses cerrados todav\u00eda. Carg\u00e1 el real de al menos un mes para ver la curva de desv\u00edo acumulado.</div>';
+  var pts=[],cE=0,cR=0,cAF=0,cHC=0,cRC=0;
+  for(var m=0;m<nC;m++){cE+=d.est[m];cR+=d.real[m];cAF+=d.adjF[m];cHC+=d.histC[m];cRC+=d.realC[m];
+    var dev;if(isFact){dev=cE>0?(cR/cE-1)*100:0;}else{var taj=cHC>0?cAF/cHC:0,t26=cRC>0?cR/cRC:0;dev=(taj>0&&t26>0)?(t26/taj-1)*100:0;}
+    pts.push({mes:MESES[m],dev:dev});}
+  var amax=2;pts.forEach(function(p){amax=Math.max(amax,Math.abs(p.dev));});amax=Math.ceil(amax*1.25);
+  var W=720,H=220,padL=40,padR=16,padT=18,padB=26,pw=W-padL-padR,ph=H-padT-padB,zeroY=padT+ph/2;
+  function yOf(v){return zeroY-(v/amax)*(ph/2);}
+  function xOf(i){return nC===1?(padL+pw/2):(padL+i*(pw/(nC-1)));}
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
+  [amax,0,-amax].forEach(function(g){var yy=yOf(g);svg+='<line x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+yy.toFixed(1)+'" stroke="'+(g===0?'var(--soft)':'var(--line)')+'" stroke-width="'+(g===0?1:0.8)+'"'+(g===0?'':' stroke-dasharray="2,3"')+'/>';
+    svg+='<text x="'+(padL-6)+'" y="'+(yy+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="IBM Plex Mono" fill="var(--soft)">'+(g>0?'+':'')+g+'%</text>';});
+  var dpath='';pts.forEach(function(p,i){dpath+=(i===0?'M':'L')+xOf(i).toFixed(1)+' '+yOf(p.dev).toFixed(1)+' ';});
+  if(pts.length>1)svg+='<path d="'+dpath+'" fill="none" stroke="var(--frame)" stroke-width="2"/>';
+  pts.forEach(function(p,i){var x=xOf(i),y=yOf(p.dev),col=p.dev>=0?'var(--green)':'var(--red)';
+    svg+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.6" fill="'+col+'"/>';
+    svg+='<text x="'+x.toFixed(1)+'" y="'+(p.dev>=0?(y-7):(y+13)).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-family="IBM Plex Mono" fill="'+col+'">'+(p.dev>=0?'+':'')+fmtAR(p.dev,1)+'%</text>';
+    svg+='<text x="'+x.toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10.5" font-family="Inter" fill="var(--soft)">'+p.mes+'</text>';});
+  return svg+'</svg>';
+}
+function segLegendBars(isFact){var lb=isFact?['Estimada','Real']:['Ajustado x inflaci\u00f3n','Real \u201926'];
+  function chip(c,t){return '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:'+c+'"></span>'+t+'</span>';}
+  return '<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)">'+chip('#A9BBD0',lb[0])+chip('var(--green)',lb[1]+' \u2265 base')+chip('var(--red)',lb[1]+' < base')+'</div>';
+}
+function segLegendLine(isFact){var sob=isFact?'sobre estimado':'sobre inflaci\u00f3n',baj=isFact?'bajo estimado':'bajo inflaci\u00f3n';
+  function chip(c,t){return '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:'+c+'"></span>'+t+'</span>';}
+  return '<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;border-top:2px solid var(--frame)"></span>Desv\u00edo acumulado</span>'+chip('var(--green)',sob)+chip('var(--red)',baj)+'</div>';
+}
+function segRecos(d){
+  var nC=d.nC,SL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'},f1=function(x){return (x>=0?'+':'')+fmtAR(x,1)+'%';};
+  if(nC<1)return [{t:'info',x:'Todav\u00eda no cerraste ning\u00fan mes con real cargado. Carg\u00e1 el cierre del primer mes para que el gr\u00e1fico tenga se\u00f1al y estas recomendaciones se activen.'}];
+  var eA=0,rA=0,aF=0,hC=0,rC=0;for(var m=0;m<nC;m++){eA+=d.est[m];rA+=d.real[m];aF+=d.adjF[m];hC+=d.histC[m];rC+=d.realC[m];}
+  var devF=eA>0?(rA/eA-1)*100:0,taj=hC>0?aF/hC:0,t26=rC>0?rA/rC:0,devC=(taj>0&&t26>0)?(t26/taj-1)*100:0;
+  var locDev=LOCALS.map(function(L){var e=0,r=0;for(var m=0;m<nC;m++){e+=projFact(scen,L,m);r+=state.real[L].fact[m];}return {L:L,d:e>0?(r/e-1)*100:0};});
+  locDev.sort(function(a,b){return a.d-b.d;});var worst=locDev[0],best=locDev[locDev.length-1];
+  var c=[];
+  if(devF<-3){if(scen==='pes')c.push({p:100,t:'neg',x:'Est\u00e1s '+f1(devF)+' por debajo de tu propio Pesimista. Es la peor se\u00f1al del tablero: adelant\u00e1 las palancas \u2014reprogram\u00e1 pagos, evalu\u00e1 refinanciaci\u00f3n o aporte\u2014 antes de lo que marca el plan; no esperes a tocar el d\u00eda cr\u00edtico.'});
+    else c.push({p:100,t:'neg',x:'Vas '+f1(devF)+' por debajo del escenario '+SL[scen]+'. Baj\u00e1 el supuesto a uno m\u00e1s conservador para no planificar caja que no va a entrar, y reforz\u00e1 el control de pagos.'});}
+  if(devF>3){if(scen==='pes')c.push({p:90,t:'pos',x:'El real le gana al Pesimista en '+f1(devF)+'. Tu peor caso qued\u00f3 conservador: pas\u00e1 a planificar en Moderado para no subestimar tu caja, y recalcul\u00e1 el d\u00eda cr\u00edtico y la necesidad financiera con ese supuesto.'});
+    else if(scen==='mod')c.push({p:80,t:'pos',x:'Vas '+f1(devF)+' por encima del Moderado. Ten\u00e9s aire, pero confirm\u00e1 con uno o dos cierres m\u00e1s antes de soltar palancas de ajuste; no relajes el control todav\u00eda.'});
+    else c.push({p:70,t:'pos',x:'Ya planific\u00e1s en Optimista y a\u00fan le gan\u00e1s ('+f1(devF)+'). Document\u00e1 esta trayectoria para la mesa con inversores, pero mantené el control de caja firme.'});}
+  if(devC<-2)c.push({p:85,t:'neg',x:'Tu cubierto real qued\u00f3 '+f1(devC)+' por debajo del ajustado por inflaci\u00f3n: el problema es de precio, no de afluencia. Trabaj\u00e1 carta y ticket (precios, sugeridos, combos) antes de gastar en traer m\u00e1s cubiertos.'});
+  else if(devC>2&&devF<0)c.push({p:75,t:'info',x:'El cubierto real le gana a la inflaci\u00f3n ('+f1(devC)+') pero la facturaci\u00f3n viene floja: tu problema es de volumen, no de precio. Mov\u00e9 ocupaci\u00f3n \u2014horarios, eventos, afluencia\u2014 y no toques precios.'});
+  else if(devC>2&&devF>=0)c.push({p:55,t:'pos',x:'Cubierto real '+f1(devC)+' arriba de la inflaci\u00f3n y facturaci\u00f3n en l\u00ednea: est\u00e1s defendiendo el ticket en t\u00e9rminos reales. Sosten\u00e9 la pol\u00edtica de precios.'});
+  if(desvioView==='cons'&&(best.d-worst.d)>6)c.push({p:65,t:'info',x:'El desv\u00edo no es parejo: '+worst.L+' arrastra ('+f1(worst.d)+') y '+best.L+' banca ('+f1(best.d)+'). Concentr\u00e1 la atenci\u00f3n operativa en '+worst.L+' en vez de repartirla pareja entre los tres.'});
+  if(nC>=3&&devF>3)c.push({p:50,t:'pos',x:'Tres cierres por encima del plan es evidencia cre\u00edble para renegociar deuda: llev\u00e1 esta trayectoria a los inversores, no un n\u00famero suelto.'});
+  if(nC>=3&&devF<0)c.push({p:60,t:'neg',x:'La tendencia consolidada no acompa\u00f1a ('+f1(devF)+' acumulado). Es argumento de peso para no sumar todav\u00eda el costo de atenci\u00f3n del cuarto local.'});
+  if(devF>0)c.push({p:30,t:'warn',x:'Ganarle al escenario no es ganarle al breakeven. Cruz\u00e1 esta se\u00f1al con el panel de equilibrio y el runway antes de cantar victoria.'});
+  if(nC<3)c.push({p:25,t:'warn',x:'Llev\u00e1s solo '+nC+' mes'+(nC>1?'es':'')+' cerrado'+(nC>1?'s':'')+': los primeros puntos saltan mucho. Tomalo como alerta temprana, no como tendencia confirmada; esper\u00e1 dos o tres cierres antes de mover decisiones estructurales.'});
+  c.push({p:10,t:'info',x:'Cruz\u00e1 esta se\u00f1al con el corte al 15 del mes en curso: si el corte ya anticipa el desv\u00edo, pod\u00e9s actuar sin esperar al cierre.'});
+  c.push({p:5,t:'info',x:'Us\u00e1 el selector por sucursal para ver si la se\u00f1al consolidada esconde un local que tira al resto para abajo.'});
+  c.sort(function(a,b){return b.p-a.p;});return c.slice(0,3);
+}
+function renderSegChart(){
+  var host=document.getElementById('segChart');if(!host)return;
+  var d=segData(),isFact=segMetric!=='cub',isAcc=segChartType==='acumulado';
+  var tog='<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px"><div class="tabs sm" id="segTypeTabs"><button data-st="mensual"'+(!isAcc?' class="on"':'')+'>Mensual</button><button data-st="acumulado"'+(isAcc?' class="on"':'')+'>Acumulado</button></div><div class="tabs sm" id="segMetricTabs"><button data-sm="fact"'+(isFact?' class="on"':'')+'>Facturaci\u00f3n</button><button data-sm="cub"'+(!isFact?' class="on"':'')+'>Cubierto real</button></div></div>';
+  var chart=isAcc?segLineSvg(d,isFact):segBarsSvg(d,isFact);
+  var legend=isAcc?segLegendLine(isFact):segLegendBars(isFact);
+  var SL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'},TONE={pos:['var(--greenbg)','var(--green)'],neg:['var(--redbg)','var(--red)'],warn:['var(--amberbg)','var(--gold)'],info:['var(--bluebg)','var(--blue)']};
+  var recos=segRecos(d),recoH='<div style="margin-top:14px"><div class="sct">Recomendaciones autom\u00e1ticas \u00b7 '+SL[scen]+'</div>';
+  recos.forEach(function(r){var co=TONE[r.t]||TONE.info;recoH+='<div style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:'+co[0]+';margin-bottom:7px"><span style="color:'+co[1]+';font-size:13px;line-height:1.3">\u25CF</span><span style="font-size:12.5px;color:var(--text);line-height:1.45">'+r.x+'</span></div>';});
+  recoH+='<p class="note" style="margin-top:2px;font-size:11px">Se recalculan solas seg\u00fan el real cargado vs el escenario activo. Son alertas para decidir, no instrucciones.</p></div>';
+  host.innerHTML=tog+legend+chart+recoH;
+  host.querySelectorAll('#segTypeTabs button').forEach(function(b){b.onclick=function(){segChartType=b.dataset.st;renderSegChart();};});
+  host.querySelectorAll('#segMetricTabs button').forEach(function(b){b.onclick=function(){segMetric=b.dataset.sm;renderSegChart();};});
+}
+function buildDesvioView(){var el=document.getElementById("desvioViewTabs");if(!el)return;var opts=[["cons","Consolidado"]].concat(LOCALS.map(function(L){return [L,L];}));el.innerHTML=opts.map(function(o){return '<button data-dv="'+o[0]+'"'+(o[0]===desvioView?' class="on"':'')+'>'+o[1]+'</button>';}).join("");el.querySelectorAll("button").forEach(function(b){b.onclick=function(){desvioView=b.dataset.dv;el.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});renderOutputs();};});}
 function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildCorteInputs();renderCorteOut();}
 function normalizar(){
   LOCALS.forEach(function(L){
@@ -819,7 +921,7 @@ function render(){
   normalizar();
   document.querySelectorAll('#scenTabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===scen));
   document.getElementById('scenLbl').textContent=SLBL[scen];
-  buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();buildCorte();
+  buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();buildCorte();buildDesvioView();
   buildCash();bindInputs(document);bindCash(document);renderOutputs();setView(curView);
 }
 
