@@ -892,15 +892,37 @@ function buildCmvEntry(){
   h+=tbl('2026 \u00b7 2\u00ba sem (real, al cerrar)',MESES,MESES.map(function(_,m){return 'cmvReal.'+L+'.'+m;}));
   host.innerHTML=h;
 }
+function cmvRecos(d){
+  var L=d.filter(function(r){return r.hasReal;});
+  if(!L.length)return [];
+  var gaps=L.map(function(r){return r.gap;});
+  var avg=gaps.reduce(function(a,b){return a+b;},0)/gaps.length;
+  var worst=L.reduce(function(a,b){return b.gap>a.gap?b:a;});
+  var first=gaps[0],last=gaps[gaps.length-1];
+  var margAvg=L.reduce(function(a,r){return a+(100-r.y26);},0)/L.length;
+  var f1=function(x){return (x>=0?'+':'')+fmtAR(x,1)+'pp';};
+  var quien=cmvView==='cons'?'el grupo':cmvView;
+  var c=[];
+  if(avg>1.5)c.push({p:100,t:'neg',x:'El CMV de '+quien+' viene sistem\u00e1ticamente arriba de 2025 ('+f1(avg)+' promedio en los meses cargados). Es margen real que se fuga todos los meses: revis\u00e1 compras, proveedores y mermas como prioridad.'});
+  else if(avg<-1)c.push({p:90,t:'pos',x:'Vas mejor que 2025 ('+f1(avg)+' promedio): est\u00e1s defendiendo el margen. Identific\u00e1 qu\u00e9 cambiaste en compra o porci\u00f3n y sostenelo.'});
+  if(L.length>=2&&(last-first)>1.5)c.push({p:85,t:'neg',x:'La brecha se abre mes a mes (de '+f1(first)+' a '+f1(last)+'): no es un evento aislado, es deterioro. Actu\u00e1 ya sobre compras y/o precios antes de que se componga.'});
+  else if(L.length>=2&&(first-last)>1.5)c.push({p:80,t:'pos',x:'La brecha se est\u00e1 cerrando (de '+f1(first)+' a '+f1(last)+'): lo que hiciste est\u00e1 funcionando, manten\u00e9 el rumbo.'});
+  if(worst.gap>avg+2&&worst.gap>2)c.push({p:75,t:'warn',x:'El golpe es puntual, no estructural: '+worst.mes+' se dispar\u00f3 a '+f1(worst.gap)+' mientras el resto se mantuvo. Busc\u00e1 el evento de ese mes \u2014compra grande mal timeada, cambio de proveedor, m\u00e1s merma\u2014.'});
+  if(avg>0.5)c.push({p:60,t:'info',x:'Cruz\u00e1 con el cubierto real vs inflaci\u00f3n: si la carta acompa\u00f1\u00f3 a la inflaci\u00f3n, esta suba de CMV es compra, merma o porci\u00f3n \u2014no precio\u2014 y la palanca es la cocina, no la carta.'});
+  if(avg>0)c.push({p:40,t:'info',x:'Tu margen bruto promedio cargado es '+fmtAR(margAvg,1)+'%. Cada punto de CMV que recuperes cae casi directo al resultado: bajar 2-3 pp es plata limpia.'});
+  if(!c.length)c.push({p:50,t:'pos',x:'El CMV de '+quien+' est\u00e1 en l\u00ednea con 2025, sin se\u00f1ales de fuga por ahora. Manten\u00e9 el control de compras.'});
+  c.sort(function(a,b){return b.p-a.p;});
+  return c.slice(0,3);
+}
 function renderCmvCompare(){
   var host=document.getElementById('cmvCompare');if(!host)return;
   var d=cmvYoY(cmvView);
   var anyReal=d.some(function(r){return r.hasReal;});
-  function draw(get25,get26,color,withGap,goodUp){
+  function draw(get25,get26,color){
     var vals=[];d.forEach(function(r){var a=get25(r),b=get26(r);if(a!=null)vals.push(a);if(b!=null)vals.push(b);});
     if(!vals.length)vals=[0,1];
-    var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals),yMax=Math.ceil(mx+1),yMin=Math.floor(mn-1);if(yMax-yMin<4)yMax=yMin+4;
-    var W=720,H=withGap?226:206,padL=40,padR=14,padT=20,padB=30,pw=W-padL-padR,ph=H-padT-padB,N=12;
+    var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals),yMax=Math.ceil(mx+1.5),yMin=Math.floor(mn-1.5);if(yMax-yMin<4)yMax=yMin+4;
+    var W=720,H=220,padL=40,padR=14,padT=22,padB=30,pw=W-padL-padR,ph=H-padT-padB,N=12;
     function xOf(i){return padL+i*(pw/(N-1));}
     function yOf(v){return padT+(yMax-v)/(yMax-yMin)*ph;}
     var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
@@ -909,24 +931,23 @@ function renderCmvCompare(){
     if(p)s+='<path d="'+p+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
     var q='';d.forEach(function(r,i){var b=get26(r);if(b!=null){q+=(q===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(b).toFixed(1)+' ';}});
     if(q)s+='<path d="'+q+'" fill="none" stroke="'+color+'" stroke-width="2.4"/>';
-    d.forEach(function(r,i){var a=get25(r);if(a!=null)s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(a).toFixed(1)+'" r="2.4" fill="#8a8a8a"/>';
-      var b=get26(r);if(b!=null){var cx=xOf(i),cy=yOf(b);s+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="3" fill="'+color+'"/>';
-        s+='<text x="'+cx.toFixed(1)+'" y="'+(cy-8).toFixed(1)+'" text-anchor="middle" font-size="8.5" font-family="IBM Plex Mono" fill="'+color+'">'+fmtAR(b,1)+'</text>';
-        if(withGap){var gap=b-a,gc=(goodUp?(gap>0):(gap<0))?'var(--green)':'var(--red)';s+='<text x="'+cx.toFixed(1)+'" y="'+(cy+15).toFixed(1)+'" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="'+gc+'">'+(gap>0?'+':'')+fmtAR(gap,1)+'pp</text>';}}});
+    d.forEach(function(r,i){var a=get25(r),b=get26(r),cx=xOf(i);
+      if(a!=null){var ay=yOf(a);var up=(b==null)||(a>=b);s+='<circle cx="'+cx.toFixed(1)+'" cy="'+ay.toFixed(1)+'" r="2.4" fill="#8a8a8a"/><text x="'+cx.toFixed(1)+'" y="'+(up?ay-7:ay+13).toFixed(1)+'" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#8a8a8a">'+fmtAR(a,1)+'</text>';}
+      if(b!=null){var by=yOf(b);var up2=(a==null)||(b>a);s+='<circle cx="'+cx.toFixed(1)+'" cy="'+by.toFixed(1)+'" r="3" fill="'+color+'"/><text x="'+cx.toFixed(1)+'" y="'+(up2?by-7:by+13).toFixed(1)+'" text-anchor="middle" font-size="8.5" font-family="IBM Plex Mono" fill="'+color+'">'+fmtAR(b,1)+'</text>';}});
     d.forEach(function(r,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+r.mes+'</text>';});
     return s+'</svg>';
   }
-  var margSvg=draw(function(r){return r.has25?100-r.y25:null;},function(r){return r.hasReal?100-r.y26:null;},'var(--green)',false,true);
-  var cmvSvg=draw(function(r){return r.has25?r.y25:null;},function(r){return r.hasReal?r.y26:null;},'var(--red)',true,false);
-  function leg(c,gap){return '<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid '+c+'"></span>2026</span>'+(gap?'<span style="color:var(--red)">brecha en pp</span>':'')+'</div>';}
-  var worst=null;d.forEach(function(r){if(r.hasReal&&r.gap>0&&(!worst||r.gap>worst.gap))worst=r;});
-  var quien=cmvView==='cons'?'el grupo':cmvView;
-  var ins=worst?('<div style="margin-top:12px;padding:10px 12px;border-radius:9px;background:var(--redbg);font-size:12.5px;color:var(--text);line-height:1.5">En <b>'+worst.mes+'</b> '+quien+' tuvo un margen bruto de <b style="color:var(--green)">'+fmtAR(100-worst.y26,1)+'%</b> contra <b>'+fmtAR(100-worst.y25,1)+'%</b> en 2025 \u2014 un CMV de '+fmtAR(worst.y26,1)+'% (<b style="color:var(--red)">+'+fmtAR(worst.gap,1)+' pp</b> vs 2025). Si la carta acompa\u00f1\u00f3 a la inflaci\u00f3n, esos puntos son compra, merma, porci\u00f3n o mix \u2014 no precio.</div>'):'';
+  var margSvg=draw(function(r){return r.has25?100-r.y25:null;},function(r){return r.hasReal?100-r.y26:null;},'var(--green)');
+  var cmvSvg=draw(function(r){return r.has25?r.y25:null;},function(r){return r.hasReal?r.y26:null;},'var(--red)');
+  function leg(c){return '<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid '+c+'"></span>2026</span></div>';}
+  var TONE={pos:['var(--greenbg)','var(--green)'],neg:['var(--redbg)','var(--red)'],warn:['var(--amberbg)','var(--gold)'],info:['var(--bluebg)','var(--blue)']};
+  var recos=cmvRecos(d),recoH='';
+  if(recos.length){recoH='<div style="margin-top:14px"><div class="sct">Sugerencias seg\u00fan la situaci\u00f3n</div>';recos.forEach(function(r){var co=TONE[r.t]||TONE.info;recoH+='<div style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:'+co[0]+';margin-bottom:7px"><span style="color:'+co[1]+';font-size:13px;line-height:1.3">\u25CF</span><span style="font-size:12.5px;color:var(--text);line-height:1.45">'+r.x+'</span></div>';});recoH+='</div>';}
   var tb='<div class="scr" style="margin-top:12px"><table><thead><tr><th class="l">Mes</th><th>CMV 2025</th><th>CMV 2026</th><th>Brecha</th><th>Margen 2026</th></tr></thead><tbody>';
   d.forEach(function(r){tb+='<tr><td class="l">'+r.mes+'</td><td class="mono">'+(r.has25?fmtAR(r.y25,1)+'%':'\u2014')+'</td>'+(r.hasReal?('<td class="mono">'+fmtAR(r.y26,1)+'%</td><td class="mono '+(r.gap>0?'neg':'pos')+'">'+(r.gap>0?'+':'')+fmtAR(r.gap,1)+'pp</td><td class="mono">'+fmtAR(100-r.y26,1)+'%</td>'):'<td class="note">\u2014</td><td class="note">\u2014</td><td class="note">\u2014</td>')+'</tr>';});
   tb+='</tbody></table></div>';
-  var nota=anyReal?'':'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Carg\u00e1 el CMV % de 2026 en las grillas de arriba (1\u00ba sem ya disponible; 2\u00ba sem al cerrar cada mes) para ver las l\u00edneas de 2026 y la brecha.</div>';
-  host.innerHTML='<div class="sct">Margen bruto % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+nota+leg('var(--green)',false)+margSvg+'<div class="sct" style="margin-top:16px">CMV % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+leg('var(--red)',true)+cmvSvg+ins+tb;
+  var nota=anyReal?'':'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Carg\u00e1 el CMV % de 2026 en las grillas de arriba (1\u00ba sem ya disponible; 2\u00ba sem al cerrar cada mes) para ver las l\u00edneas de 2026 y las sugerencias.</div>';
+  host.innerHTML='<div class="sct">Margen bruto % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+nota+leg('var(--green)')+margSvg+'<div class="sct" style="margin-top:16px">CMV % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+leg('var(--red)')+cmvSvg+recoH+tb;
 }
 function buildDesvioView(){var el=document.getElementById("desvioViewTabs");if(!el)return;var opts=[["cons","Consolidado"]].concat(LOCALS.map(function(L){return [L,L];}));el.innerHTML=opts.map(function(o){return '<button data-dv="'+o[0]+'"'+(o[0]===desvioView?' class="on"':'')+'>'+o[1]+'</button>';}).join("");el.querySelectorAll("button").forEach(function(b){b.onclick=function(){desvioView=b.dataset.dv;el.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});renderOutputs();};});}
 function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildCorteInputs();renderCorteOut();}
