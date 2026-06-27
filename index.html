@@ -1159,6 +1159,7 @@ window.addEventListener('beforeunload',function(){if(tengoLock){try{escribirLock
 /* ===== Monitoreo histórico mensual 2025 vs 2026 (Resultados) ===== */
 var histView='cons';
 var histMetric='cub';
+var histReal=true;
 var histEntryOpen=false;
 const HISTM12=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 function histGet(L,key,i){var o=state.histM&&state.histM[L];if(!o)return null;var a=o[key];if(!Array.isArray(a))return null;var v=a[i];return (v==null||v==='')?null:+v;}
@@ -1203,7 +1204,7 @@ function histBars(s,metric){
   for(var i=0;i<12;i++){var c=xC(i),x25=c-bw-1,x26=c+1;
     if(s.y25[i]!=null){var y25=yOf(s.y25[i]);o+='<rect x="'+x25.toFixed(1)+'" y="'+y25.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,ph-(y25-padT)).toFixed(1)+'" rx="2" fill="#8a8a8a"><title>'+s.labels[i]+' 2025: '+fmtV(s.y25[i])+'</title></rect>';}
     if(s.y26[i]!=null){var y26=yOf(s.y26[i]);var col=s.prov[i]?'var(--blue)':'var(--frame)';o+='<rect x="'+x26.toFixed(1)+'" y="'+y26.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,ph-(y26-padT)).toFixed(1)+'" rx="2" fill="'+col+'" opacity="'+(s.prov[i]?'0.6':'1')+'"><title>'+s.labels[i]+' 2026'+(s.prov[i]?' (prov.)':'')+': '+fmtV(s.y26[i])+'</title></rect>';}
-    o+='<text x="'+c.toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+s.labels[i]+'</text>';
+    o+='<text x="'+c.toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+s.labels[i]+'</text>';var _pi=[];if(s.y25[i]!=null)_pi.push('2025: '+fmtV(s.y25[i]));if(s.y26[i]!=null)_pi.push('2026'+(s.prov[i]?' (prov.)':'')+': '+fmtV(s.y26[i]));if(s.y25[i]!=null&&s.y26[i]!=null&&s.y25[i]!==0){var _vv=(s.y26[i]/s.y25[i]-1)*100;_pi.push('var '+(_vv>=0?'+':'')+fmtAR(_vv,0)+'%');}var _inf=s.labels[i]+(_pi.length?' · '+_pi.join(' · '):' · sin datos');o+='<rect class="histHit" data-tg="bars" data-info="'+esc(_inf)+'" x="'+(padL+slot*i).toFixed(1)+'" y="'+padT+'" width="'+slot.toFixed(1)+'" height="'+ph+'" fill="transparent"><title>'+esc(_inf)+'</title></rect>';
   }
   return o+'</svg>';
 }
@@ -1219,7 +1220,7 @@ function histVarChart(inter,seq,labels){
   function line(arr,color,dash){var p='';arr.forEach(function(v,i){if(v!=null){p+=(p===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(v).toFixed(1)+' ';}});if(p)s+='<path d="'+p+'" fill="none" stroke="'+color+'" stroke-width="2.2"'+(dash?' stroke-dasharray="5,4"':'')+'/>';
     arr.forEach(function(v,i){if(v!=null){var yy=yOf(v);s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yy.toFixed(1)+'" r="2.6" fill="'+color+'"/><text x="'+xOf(i).toFixed(1)+'" y="'+(v>=0?yy-6:yy+13).toFixed(1)+'" text-anchor="middle" font-size="8.5" font-family="Inter" fill="'+color+'">'+(v>=0?'+':'')+fmtAR(v,0)+'</text>';}});}
   line(inter,'var(--frame)',false);line(seq,'var(--gold)',true);
-  labels.forEach(function(m,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+m+'</text>';});
+  labels.forEach(function(m,i){s+='<text x="'+xOf(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" font-family="Inter" fill="var(--soft)">'+m+'</text>';var _pi=[];if(inter[i]!=null)_pi.push('interanual '+(inter[i]>=0?'+':'')+fmtAR(inter[i],0)+'%');if(seq[i]!=null)_pi.push('secuencial '+(seq[i]>=0?'+':'')+fmtAR(seq[i],0)+'%');var _inf=m+(_pi.length?' · '+_pi.join(' · '):' · sin datos');var _hw=pw/11;s+='<rect class="histHit" data-tg="var" data-info="'+esc(_inf)+'" x="'+Math.max(padL,xOf(i)-_hw/2).toFixed(1)+'" y="'+padT+'" width="'+_hw.toFixed(1)+'" height="'+ph+'" fill="transparent"><title>'+esc(_inf)+'</title></rect>';});
   return s+'</svg>';
 }
 function histRecos(view){
@@ -1279,7 +1280,7 @@ function renderHistMonitor(){
   var view=histView,metric=histMetric;
   var sFact=histSeries(view,'fact'),sCub=histSeries(view,'cub'),sTk=histSeries(view,'tk');
   var s=metric==='fact'?sFact:(metric==='cub'?sCub:sTk);
-  var vs=histVarSeries(view,metric);
+  var vs=histVarSeries(view,metric);var inflArr=state.histInfl||[];var realOn=(histReal&&metric!=='cub');var sAdj=s,vsInter=vs.inter;if(realOn){var y25r=s.y25.map(function(v,i){return v==null?null:v*(1+(+inflArr[i]||0)/100);});sAdj={y25:y25r,y26:s.y26,prov:s.prov,labels:s.labels};vsInter=s.y26.map(function(v,i){return (v!=null&&y25r[i]!=null&&y25r[i]!==0)?((v/y25r[i])-1)*100:null;});}
   var ci=histClosedIdx(sCub),warc=(view==='Warcalde');
   var sum=function(arr){return ci.reduce(function(a,i){return a+(arr[i]||0);},0);};
   var f25=sum(sFact.y25),f26=sum(sFact.y26),c25=sum(sCub.y25),c26=sum(sCub.y26);
@@ -1305,14 +1306,14 @@ function renderHistMonitor(){
   var recos=histRecos(view),recoH='';
   if(recos.length){recoH='<div style="margin-top:16px"><div class="sct">Lectura según la situación</div>';recos.forEach(function(r){var co=TONE[r.t]||TONE.info;recoH+='<div style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:'+co[0]+';margin-bottom:6px"><span style="color:'+co[1]+';font-weight:700;line-height:1.4">•</span><span style="font-size:12.5px;color:var(--text);line-height:1.5">'+r.x+'</span></div>';});recoH+='</div>';}
   var nota=warc?'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Warcalde no tiene 2025: ves solo su serie 2026 y la variación secuencial. La interanual queda pendiente.</div>':'';
-  var nivT='<div class="sct">'+metLbl+' · mes a mes</div>'+leg1+histBars(s,metric);
-  var varT='<div class="sct" style="margin-top:16px">Variación de '+(metric==='cub'?'cubiertos':(metric==='fact'?'facturación':'cubierto promedio'))+' · interanual y secuencial</div>'+leg2+histVarChart(vs.inter,vs.seq,HISTM12);
+  var realTabs=(metric==='cub')?'':'<div class="row" style="gap:8px;align-items:center;margin:2px 0 6px"><span class="note" style="font-weight:600">Comparar:</span><div class="tabs sm" id="histRealTabs"><button data-hr="nom"'+(!histReal?' class="on"':'')+'>Nominal</button><button data-hr="real"'+(histReal?' class="on"':'')+'>Real · pesos de hoy</button></div></div>';var realNote=realOn?'<div class="note" style="margin:2px 0 6px;line-height:1.45">2025 reexpresado en pesos de hoy (\u00d7 inflación interanual del mes) para comparar manzanas con manzanas. La línea interanual queda deflactada; la secuencial es nominal.</div>':'';var nivT='<div class="sct">'+metLbl+(realOn?' · pesos de hoy':'')+' · mes a mes</div>'+realTabs+realNote+leg1+histBars(sAdj,metric)+'<div id="histInfoBars" class="note" style="margin-top:4px;min-height:17px;font-weight:600;color:var(--text)">Tocá una barra para ver el detalle del mes.</div>';
+  var varT='<div class="sct" style="margin-top:16px">Variación de '+(metric==='cub'?'cubiertos':(metric==='fact'?'facturación':'cubierto promedio'))+' · interanual y secuencial</div>'+leg2+histVarChart(vsInter,vs.seq,HISTM12)+'<div id="histInfoVar" class="note" style="margin-top:4px;min-height:17px;font-weight:600;color:var(--text)">Tocá un punto para ver la variación del mes.</div>';
   var tb='<div class="scr" style="margin-top:14px"><table><thead><tr><th class="l">Mes</th><th>'+(metric==='cub'?'Cub.':(metric==='fact'?'Fact.':'Cub.prom.'))+' 2025</th><th>2026</th><th>Δ interanual</th><th>Δ secuencial</th></tr></thead><tbody>';
   function cellv(v){if(v==null)return '—';if(metric==='fact')return '$'+fmtAR(v,1)+'M';if(metric==='cub')return fmtAR(v,0);return '$'+fmtAR(v,0);}
   function pcell(v){return v==null?'<td class="mono">—</td>':'<td class="mono '+(v>=0?'pos':'neg')+'">'+(v>=0?'+':'')+fmtAR(v,1)+'%</td>';}
-  HISTM12.forEach(function(m,i){tb+='<tr><td class="l">'+m+(s.prov[i]?' <span class="note">(prov.)</span>':'')+'</td><td class="mono">'+cellv(s.y25[i])+'</td><td class="mono">'+cellv(s.y26[i])+'</td>'+pcell(vs.inter[i])+pcell(vs.seq[i])+'</tr>';});
+  HISTM12.forEach(function(m,i){tb+='<tr><td class="l">'+m+(s.prov[i]?' <span class="note">(prov.)</span>':'')+'</td><td class="mono">'+cellv(sAdj.y25[i])+'</td><td class="mono">'+cellv(s.y26[i])+'</td>'+pcell(vsInter[i])+pcell(vs.seq[i])+'</tr>';});
   tb+='</tbody></table></div>';
-  host.innerHTML=kpis+nota+nivT+varT+recoH+tb;
+  host.innerHTML=kpis+nota+nivT+varT+recoH+tb;host.querySelectorAll('#histRealTabs button').forEach(function(b){b.onclick=function(){histReal=(b.dataset.hr==='real');renderHistMonitor();};});host.querySelectorAll('.histHit').forEach(function(el){el.style.cursor='pointer';el.addEventListener('click',function(){var tg=el.getAttribute('data-tg');var box=document.getElementById(tg==='var'?'histInfoVar':'histInfoBars');if(box)box.textContent=el.getAttribute('data-info');host.querySelectorAll('.histHit[data-tg="'+tg+'"]').forEach(function(o){o.setAttribute('fill','transparent');});el.setAttribute('fill','rgba(43,92,160,0.10)');});});
 }
 
 function initColapsables(){
