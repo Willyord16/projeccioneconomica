@@ -164,9 +164,9 @@
 
   <div class="eye" data-view="supuestos">Perillas del escenario <span class="pill pv scen-tag" id="scenLbl" style="margin-left:4px">Moderado</span></div>
   <div class="card">
-    <p class="sub">Variación de cubiertos (Q) y de ticket real (P) respecto del histórico, por local. Cambiá el escenario activo arriba para editar cada uno.</p>
+    <p class="sub">Variación de cubiertos (Q) y de cubierto promedio real (P) respecto del histórico, por local. Cambiá el escenario activo arriba para editar cada uno.</p>
     <div class="scr"><table>
-      <thead><tr><th class="l">Local</th><th>Δ Cubiertos (Q) %</th><th>Δ Ticket (P) %</th></tr></thead>
+      <thead><tr><th class="l">Local</th><th>Δ Cubiertos (Q) %</th><th>Δ Cubierto promedio (P) %</th></tr></thead>
       <tbody id="knobsBody"></tbody>
     </table></div>
     <div style="margin-top:12px"><label class="f">Ajuste de CMV por escenario (puntos %, se suma al CMV base de cada local)</label>
@@ -245,7 +245,7 @@
 
   <div class="eye" data-view="resultados">Monitoreo mensual · 2025 vs 2026</div>
   <div class="card">
-    <p class="sub">Facturación, cubiertos y ticket mes a mes. Cargás 2025 completo y 2026 a medida que cierra. Junio 2026 es provisorio (al día 25). La brecha real usa la inflación interanual (mayo 33,2% s/INDEC; resto del semestre estimado). Warcalde no tiene 2025, así que su comparación interanual queda pendiente.</p>
+    <p class="sub">Facturación, cubiertos y cubierto promedio mes a mes. Cargás 2025 completo y 2026 a medida que cierra. Junio 2026 es provisorio (al día 25). La brecha real usa la inflación interanual (mayo 33,2% s/INDEC; resto del semestre estimado). Warcalde no tiene 2025, así que su comparación interanual queda pendiente.</p>
     <div class="row" style="margin-bottom:8px;align-items:center;gap:9px"><span class="note" style="font-weight:600;color:var(--text)">Vista:</span><div class="tabs sm" id="histViewTabs"></div></div>
     <div class="row" style="margin-bottom:10px;align-items:center;gap:9px"><span class="note" style="font-weight:600;color:var(--text)">Métrica:</span><div class="tabs sm" id="histMetricTabs"></div></div>
     <div id="histEntry"></div>
@@ -437,7 +437,7 @@ function buildExtraPL(){
   var el=document.getElementById('extraPLBody');if(!el)return;
   var rows=(state.extraPL||[]).map(function(e,i){
     var vals=MESES.map(function(_,m){return '<td>'+inp('extraPL.'+i+'.vals.'+m,{dec:0})+'</td>';}).join('');
-    return '<tr><td class="l"><input type="text" value="'+esc(e.nombre||'')+'" placeholder="concepto" oninput="extraSet('+i+',\'nombre\',this.value)" style="text-align:left;width:150px"'+(editable?'':' disabled')+'></td><td><select onchange="extraSet('+i+',\'unidad\',this.value)"'+(editable?'':' disabled')+'>'+LOCALS.map(function(L){return '<option value="'+esc(L)+'"'+(e.unidad===L?' selected':'')+'>'+esc(L)+'</option>';}).join('')+'</select></td><td><select onchange="extraSet('+i+',\'signo\',+this.value)"'+(editable?'':' disabled')+'><option value="-1"'+((e.signo===1)?'':' selected')+'>resta</option><option value="1"'+((e.signo===1)?' selected':'')+'>suma</option></select></td>'+vals+'<td><button class="delx" onclick="extraDel('+i+')"'+(editable?'':' disabled')+'>Quitar</button></td></tr>';
+    return '<tr><td class="l"><input type="text" value="'+esc(e.nombre||'')+'" placeholder="concepto" oninput="extraSet('+i+',\'nombre\',this.value)" style="text-align:left;width:150px"'+(editable?'':' disabled')+'></td><td><select onchange="extraSet('+i+',\'unidad\',this.value)"'+(editable?'':' disabled')+'>'+LOCALS.map(function(L){return '<option value="'+esc(L)+'"'+(e.unidad===L?' selected':'')+'>'+esc(L)+'</option>';}).join('')+'</select></td><td><select onchange="extraSet('+i+',\'signo\',+this.value)"'+(editable?'':' disabled')+'><option value="-1"'+((e.signo===1)?'':' selected')+'>resta</option><option value="1"'+((e.signo===1)?' selected':'')+'>suma</option></select></td>'+vals+'<td><button class="cashbtn" onclick="extraDup('+i+')"'+(editable?'':' disabled')+' style="margin-right:6px" title="Crea este mismo concepto en las otras sucursales para cargar el monto de cada una">en las 3</button><button class="delx" onclick="extraDel('+i+')"'+(editable?'':' disabled')+'>Quitar</button></td></tr>';
   }).join('');
   var hint=(state.extraPL&&state.extraPL.length)?'':'<p class="note" style="margin:8px 0 4px">A\u00fan no agregaste conceptos. '+(editable?'Toc\u00e1 \u201c+ concepto\u201d para sumar l\u00edneas (honorarios, gastos extraordinarios, ingresos puntuales) al resultado.':'Entr\u00e1 en modo edici\u00f3n y toc\u00e1 \u201c+ concepto\u201d.')+'</p>';
   el.innerHTML='<table><thead><tr><th class="l">Concepto</th><th>Unidad</th><th>+/\u2212</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+hint+'<button class="cashbtn" onclick="extraAdd()"'+(editable?'':' disabled')+'>+ concepto</button>';
@@ -445,6 +445,7 @@ function buildExtraPL(){
 function extraSet(i,k,v){if(state.extraPL&&state.extraPL[i]){state.extraPL[i][k]=v;renderOutputs();guardarNube();}}
 function extraAdd(){if(!editable)return;state.extraPL=state.extraPL||[];state.extraPL.push({nombre:'',unidad:(view&&view!=='cons'?view:LOCALS[0]),signo:-1,vals:[0,0,0,0,0,0]});buildExtraPL();bindInputs(document);renderOutputs();guardarNube();}
 function extraDel(i){if(!editable)return;state.extraPL.splice(i,1);buildExtraPL();bindInputs(document);renderOutputs();guardarNube();}
+function extraDup(i){if(!editable)return;var src=state.extraPL&&state.extraPL[i];if(!src)return;LOCALS.forEach(function(L){if(L===src.unidad)return;var ex=state.extraPL.some(function(e){return e&&e.unidad===L&&(e.nombre||'')===(src.nombre||'');});if(ex)return;state.extraPL.push({nombre:src.nombre||'',unidad:L,signo:src.signo,vals:(src.vals||[]).slice()});});buildExtraPL();bindInputs(document);renderOutputs();guardarNube();}
 function buildKnobs(){
   document.getElementById('knobsBody').innerHTML=LOCALS.map(L=>'<tr><td class="l">'+L+'</td><td>'+inp('qDelta.'+scen+'.'+L,{dec:0})+'</td><td>'+inp('pDelta.'+scen+'.'+L,{dec:0})+'</td></tr>').join('');
   document.getElementById('cmvStressRow').innerHTML=['pes','mod','opt'].map(s=>'<span class="note" style="width:64px">'+SLBL[s]+'</span><span style="width:90px;display:inline-block">'+inp('cmvStress.'+s,{dec:0})+'</span>').join('');
@@ -868,9 +869,9 @@ function segRecos(d){
   if(devF>3){if(scen==='pes')c.push({p:90,t:'pos',x:'El real le gana al Pesimista en '+f1(devF)+'. Tu peor caso qued\u00f3 conservador: pas\u00e1 a planificar en Moderado para no subestimar tu caja, y recalcul\u00e1 el d\u00eda cr\u00edtico y la necesidad financiera con ese supuesto.'});
     else if(scen==='mod')c.push({p:80,t:'pos',x:'Vas '+f1(devF)+' por encima del Moderado. Ten\u00e9s aire, pero confirm\u00e1 con uno o dos cierres m\u00e1s antes de soltar palancas de ajuste; no relajes el control todav\u00eda.'});
     else c.push({p:70,t:'pos',x:'Ya planific\u00e1s en Optimista y a\u00fan le gan\u00e1s ('+f1(devF)+'). Document\u00e1 esta trayectoria para la mesa con inversores, pero mantené el control de caja firme.'});}
-  if(devC<-2)c.push({p:85,t:'neg',x:'Tu cubierto real qued\u00f3 '+f1(devC)+' por debajo del ajustado por inflaci\u00f3n: el problema es de precio, no de afluencia. Trabaj\u00e1 carta y ticket (precios, sugeridos, combos) antes de gastar en traer m\u00e1s cubiertos.'});
+  if(devC<-2)c.push({p:85,t:'neg',x:'Tu cubierto real qued\u00f3 '+f1(devC)+' por debajo del ajustado por inflaci\u00f3n: el problema es de precio, no de afluencia. Trabaj\u00e1 carta y cubierto promedio (precios, sugeridos, combos) antes de gastar en traer m\u00e1s cubiertos.'});
   else if(devC>2&&devF<0)c.push({p:75,t:'info',x:'El cubierto real le gana a la inflaci\u00f3n ('+f1(devC)+') pero la facturaci\u00f3n viene floja: tu problema es de volumen, no de precio. Mov\u00e9 ocupaci\u00f3n \u2014horarios, eventos, afluencia\u2014 y no toques precios.'});
-  else if(devC>2&&devF>=0)c.push({p:55,t:'pos',x:'Cubierto real '+f1(devC)+' arriba de la inflaci\u00f3n y facturaci\u00f3n en l\u00ednea: est\u00e1s defendiendo el ticket en t\u00e9rminos reales. Sosten\u00e9 la pol\u00edtica de precios.'});
+  else if(devC>2&&devF>=0)c.push({p:55,t:'pos',x:'Cubierto real '+f1(devC)+' arriba de la inflaci\u00f3n y facturaci\u00f3n en l\u00ednea: est\u00e1s defendiendo el cubierto promedio en t\u00e9rminos reales. Sosten\u00e9 la pol\u00edtica de precios.'});
   if(desvioView==='cons'&&(best.d-worst.d)>6)c.push({p:65,t:'info',x:'El desv\u00edo no es parejo: '+worst.L+' arrastra ('+f1(worst.d)+') y '+best.L+' banca ('+f1(best.d)+'). Concentr\u00e1 la atenci\u00f3n operativa en '+worst.L+' en vez de repartirla pareja entre los tres.'});
   if(nC>=3&&devF>3)c.push({p:50,t:'pos',x:'Tres cierres por encima del plan es evidencia cre\u00edble para renegociar deuda: llev\u00e1 esta trayectoria a los inversores, no un n\u00famero suelto.'});
   if(nC>=3&&devF<0)c.push({p:60,t:'neg',x:'La tendencia consolidada no acompa\u00f1a ('+f1(devF)+' acumulado). Es argumento de peso para no sumar todav\u00eda el costo de atenci\u00f3n del cuarto local.'});
@@ -1134,7 +1135,7 @@ document.getElementById('btnEditar').onclick=function(){
   var c=prompt('Clave para editar:');
   if(c===null)return;
   if(c!==CLAVE_EDICION){alert('Clave incorrecta');return;}
-  if(!miNombre){var nm=prompt('Tu nombre (para avisar a los demás quién está editando):');if(nm===null)return;miNombre=(nm||'').trim()||'alguien';try{localStorage.setItem('s69_user',miNombre);}catch(e){}}
+  var nm=prompt('Tu nombre (para avisar a los demás quién está editando):',miNombre||'');if(nm===null)return;miNombre=(nm||'').trim()||'alguien';try{localStorage.setItem('s69_user',miNombre);}catch(e){}
   setEstado('verificando…','pw');
   leerLock(function(lk){
     if(lockActivo(lk)){
@@ -1244,9 +1245,9 @@ function histRecos(view){
   else if(volAvg<=-3)out.push({t:'warn',x:'Volumen en baja en '+quien+': '+f(volAvg)+' de cubiertos vs 2025.'});
   else if(volAvg<3)out.push({t:'info',x:'Volumen estable en '+quien+' ('+f(volAvg)+' vs 2025).'});
   else out.push({t:'pos',x:'Volumen creciendo en '+quien+' ('+f(volAvg)+' vs 2025).'});
-  if(tkReal>=4)out.push({t:'pos',x:'Defendés precio en términos reales: el ticket le gana a la inflación ('+f(tkReal)+' real). Eso es lo que sostiene la facturación pese a perder gente.'});
-  else if(tkReal>-2)out.push({t:'warn',x:'Ticket real casi plano ('+f(tkReal)+'): apenas acompañás la inflación, el precio no compensa la caída de volumen.'});
-  else out.push({t:'neg',x:'Ticket real negativo ('+f(tkReal)+'): el precio se atrasa contra la inflación y se suma a la caída de volumen.'});
+  if(tkReal>=4)out.push({t:'pos',x:'Defendés precio en términos reales: el cubierto promedio le gana a la inflación ('+f(tkReal)+' real). Eso es lo que sostiene la facturación pese a perder gente.'});
+  else if(tkReal>-2)out.push({t:'warn',x:'Cubierto promedio real casi plano ('+f(tkReal)+'): apenas acompañás la inflación, el precio no compensa la caída de volumen.'});
+  else out.push({t:'neg',x:'Cubierto promedio real negativo ('+f(tkReal)+'): el precio se atrasa contra la inflación y se suma a la caída de volumen.'});
   if(factReal<-7)out.push({t:'neg',x:'Facturación real '+f(factReal)+' vs 2025: '+quien+' se está achicando en términos reales (deflactado por inflación interanual ~'+fmtAR(infl*100,0)+'%).'});
   else if(factReal<-2)out.push({t:'warn',x:'Facturación real '+f(factReal)+' vs 2025: leve contracción real.'});
   else out.push({t:'pos',x:'Facturación real '+f(factReal)+' vs 2025: sostenés el nivel real.'});
@@ -1259,7 +1260,7 @@ function buildHistTabs(){
     v.innerHTML=opts.map(function(o){return '<button data-hv="'+o[0]+'"'+(o[0]===histView?' class="on"':'')+'>'+o[1]+'</button>';}).join('');
     v.querySelectorAll('button').forEach(function(b){b.onclick=function(){histView=b.dataset.hv;v.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});buildHistEntry();bindInputs(document);renderHistMonitor();};});}
   var mt=document.getElementById('histMetricTabs');
-  if(mt){var ms=[['cub','Cubiertos'],['fact','Facturación'],['tk','Ticket promedio']];
+  if(mt){var ms=[['cub','Cubiertos'],['fact','Facturación'],['tk','Cubierto promedio']];
     mt.innerHTML=ms.map(function(o){return '<button data-hm="'+o[0]+'"'+(o[0]===histMetric?' class="on"':'')+'>'+o[1]+'</button>';}).join('');
     mt.querySelectorAll('button').forEach(function(b){b.onclick=function(){histMetric=b.dataset.hm;mt.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});renderHistMonitor();};});}
 }
@@ -1297,7 +1298,7 @@ function renderHistMonitor(){
     kpis+=kp('Acum. 2025 (Ene–May)',k1)+kp('Acum. 2026 (Ene–May)',k2)+kp('Brecha nominal',pn(nom),nom>=0?'pos':'neg')+kp('Brecha real'+(metric==='cub'?'':' (defl. ~'+fmtAR(infl*100,0)+'%)'),real==null?'= nominal':pn(real),real==null?'':(real>=0?'pos':'neg'));
   }
   kpis+='</div>';
-  var metLbl=metric==='fact'?'Facturación ($ M)':(metric==='cub'?'Cubiertos':'Ticket promedio ($)');
+  var metLbl=metric==='fact'?'Facturación ($ M)':(metric==='cub'?'Cubiertos':'Cubierto promedio ($)');
   var leg1='<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:2px;background:#8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:2px;background:var(--frame)"></span>2026</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:2px;background:var(--blue);opacity:.6"></span>2026 provisorio (jun al 25)</span></div>';
   var leg2='<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:0;border-top:2.4px solid var(--frame)"></span>vs mismo mes 2025 (interanual)</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:0;border-top:2.4px dashed var(--gold)"></span>vs mes anterior (secuencial)</span></div>';
   var TONE={pos:['var(--greenbg)','var(--green)'],neg:['var(--redbg)','var(--red)'],warn:['var(--amberbg)','var(--gold)'],info:['var(--bluebg)','var(--blue)']};
@@ -1305,8 +1306,8 @@ function renderHistMonitor(){
   if(recos.length){recoH='<div style="margin-top:16px"><div class="sct">Lectura según la situación</div>';recos.forEach(function(r){var co=TONE[r.t]||TONE.info;recoH+='<div style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:'+co[0]+';margin-bottom:6px"><span style="color:'+co[1]+';font-weight:700;line-height:1.4">•</span><span style="font-size:12.5px;color:var(--text);line-height:1.5">'+r.x+'</span></div>';});recoH+='</div>';}
   var nota=warc?'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Warcalde no tiene 2025: ves solo su serie 2026 y la variación secuencial. La interanual queda pendiente.</div>':'';
   var nivT='<div class="sct">'+metLbl+' · mes a mes</div>'+leg1+histBars(s,metric);
-  var varT='<div class="sct" style="margin-top:16px">Variación de '+(metric==='cub'?'cubiertos':(metric==='fact'?'facturación':'ticket'))+' · interanual y secuencial</div>'+leg2+histVarChart(vs.inter,vs.seq,HISTM12);
-  var tb='<div class="scr" style="margin-top:14px"><table><thead><tr><th class="l">Mes</th><th>'+(metric==='cub'?'Cub.':(metric==='fact'?'Fact.':'Tk.'))+' 2025</th><th>2026</th><th>Δ interanual</th><th>Δ secuencial</th></tr></thead><tbody>';
+  var varT='<div class="sct" style="margin-top:16px">Variación de '+(metric==='cub'?'cubiertos':(metric==='fact'?'facturación':'cubierto promedio'))+' · interanual y secuencial</div>'+leg2+histVarChart(vs.inter,vs.seq,HISTM12);
+  var tb='<div class="scr" style="margin-top:14px"><table><thead><tr><th class="l">Mes</th><th>'+(metric==='cub'?'Cub.':(metric==='fact'?'Fact.':'Cub.prom.'))+' 2025</th><th>2026</th><th>Δ interanual</th><th>Δ secuencial</th></tr></thead><tbody>';
   function cellv(v){if(v==null)return '—';if(metric==='fact')return '$'+fmtAR(v,1)+'M';if(metric==='cub')return fmtAR(v,0);return '$'+fmtAR(v,0);}
   function pcell(v){return v==null?'<td class="mono">—</td>':'<td class="mono '+(v>=0?'pos':'neg')+'">'+(v>=0?'+':'')+fmtAR(v,1)+'%</td>';}
   HISTM12.forEach(function(m,i){tb+='<tr><td class="l">'+m+(s.prov[i]?' <span class="note">(prov.)</span>':'')+'</td><td class="mono">'+cellv(s.y25[i])+'</td><td class="mono">'+cellv(s.y26[i])+'</td>'+pcell(vs.inter[i])+pcell(vs.seq[i])+'</tr>';});
