@@ -317,7 +317,7 @@ let state={
   pDelta:{pes:{'Warcalde':-5,'Güemes':-6,'Capke':-4},mod:{'Warcalde':-2,'Güemes':-4,'Capke':0},opt:{'Warcalde':2,'Güemes':0,'Capke':3}},
   deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),banco:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]},
   histProv:5,
-  histInfl:[36,35,35,34,33.2,33,33.2,28.63,26.26,23.69,20.86,17.95],
+  histInfl:[32.38,33.02,32.64,32.38,33.2,33,33.2,28.63,26.26,23.69,20.86,17.95],
   histM:{'Warcalde':{f25:[null,null,null,null,null,null,null,null,null,null,null,null],c25:[null,null,null,null,null,null,null,null,null,null,null,null],f26:[86953796,104800180,139171351,164230339,148048070,81130088,null,null,null,null,null,null],c26:[4600,4888,5734,5555,5076,3565,null,null,null,null,null,null]},'Güemes':{f25:[60446004.07,58157345,77241577.95,74139906.15,84730106.95,87131960.34,97661243.3,102341597.69,87604139.36,86277172.15,89592178.31,89975883.57],c25:[3314,3158,4295,3951,3850,3982,4171,4369,3786,3389,3293,3073],f26:[70929020,80354165,92482435,91429736,119554352,65932767.18,null,null,null,null,null,null],c26:[2862,3035,3468,3078,3766,2201,null,null,null,null,null,null]},'Capke':{f25:[43114540,44193637,61172000,53647292,56380353,56251040,66315097,63108787,57139899,59468850.75,54167071,55749192],c25:[3975,4010,5443,4537,4563,4556,5150,4820,4186,4136,3798,3376],f26:[57311287,62013909,64588105,60480900,67982303,47701830,null,null,null,null,null,null],c26:[3694,4058,4249,3811,4192,2933,null,null,null,null,null,null]}}
 };
 let scen='pes', view='cons', localTab='Warcalde', chart, editable=false, corteMes=0, corteView='cons';
@@ -1003,6 +1003,7 @@ function normalizar(){
       ['pes','mod','opt'].forEach(function(sc){if(state[key][sc]==null)state[key][sc]=JSON.parse(JSON.stringify((DEFAULTS[key]&&DEFAULTS[key][sc])||{}));LOCALS.forEach(function(L){if(state[key][sc][L]==null)state[key][sc][L]=0;});});
     });
   }}catch(e){}
+  try{if(!state._inflReal2026&&Array.isArray(state.histInfl)){var _ir=[32.38,33.02,32.64,32.38,33.2];for(var _k=0;_k<5;_k++)state.histInfl[_k]=_ir[_k];state._inflReal2026=true;}}catch(e){}
   LOCALS.forEach(function(L){
     if(!state.costos||!state.costos[L])return;
     ['sueldos','alquiler','servicios'].forEach(function(k){
