@@ -183,7 +183,7 @@
 
   <div class="eye" data-view="supuestos">Deuda · calendario de vencimientos</div>
   <div class="card">
-    <p class="sub">Fisco y banco en pesos. Inversores en USD (se convierten al TC real del escenario). El interés va al económico; capital + interés van a la caja.</p>
+    <p class="sub">Fisco y banco en pesos. Inversores en USD (se convierten al TC real del escenario). El interés (inversores y banco) va al económico; el capital + interés van a la caja.</p>
     <div class="scr"><table><thead><tr><th class="l">Concepto</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th></tr></thead>
     <tbody id="debtBody"></tbody></table></div>
   </div>
@@ -308,14 +308,14 @@ let state={
     'Capke':{fact:[60,59,58,0,0,0].map(x=>x*M), cub:[3350,3300,3250,0,0,0]}
   },
   costos:{
-    'Warcalde':{cmv:30.7,reg:4.5,imp:8.7,mant:1.2,sueldos:Array(6).fill(39.5*M),alquiler:Array(6).fill(10.4*M),servicios:Array(6).fill(5.8*M)},
-    'Güemes':{cmv:35.7,reg:4.5,imp:10.3,mant:1.0,sueldos:Array(6).fill(30.9*M),alquiler:Array(6).fill(3.2*M),servicios:Array(6).fill(4.2*M)},
-    'Capke':{cmv:33.3,reg:5.1,imp:7.0,mant:0.5,sueldos:Array(6).fill(21.1*M),alquiler:Array(6).fill(2.1*M),servicios:Array(6).fill(3.3*M)}
+    'Warcalde':{cmv:30.7,reg:4.5,imp:8.7,mant:1.2,sueldos:Array(6).fill(39.5*M),alquiler:Array(6).fill(10.4*M),servicios:Array(6).fill(5.8*M),gastosBanco:Array(6).fill(0)},
+    'Güemes':{cmv:35.7,reg:4.5,imp:10.3,mant:1.0,sueldos:Array(6).fill(30.9*M),alquiler:Array(6).fill(3.2*M),servicios:Array(6).fill(4.2*M),gastosBanco:Array(6).fill(0)},
+    'Capke':{cmv:33.3,reg:5.1,imp:7.0,mant:0.5,sueldos:Array(6).fill(21.1*M),alquiler:Array(6).fill(2.1*M),servicios:Array(6).fill(3.3*M),gastosBanco:Array(6).fill(0)}
   },
   aguinaldo:{'Warcalde':[0,0,0,0,0,0],'Güemes':[0,0,0,0,0,0],'Capke':[0,0,0,0,0,0]},
   qDelta:{pes:{'Warcalde':-12,'Güemes':-18,'Capke':-10},mod:{'Warcalde':-6,'Güemes':-12,'Capke':-4},opt:{'Warcalde':4,'Güemes':0,'Capke':5}},
   pDelta:{pes:{'Warcalde':-5,'Güemes':-6,'Capke':-4},mod:{'Warcalde':-2,'Güemes':-4,'Capke':0},opt:{'Warcalde':2,'Güemes':0,'Capke':3}},
-  deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),banco:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]},
+  deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),bancoCap:[0,0,0,0,0,0],bancoInt:[0,0,0,0,0,0],invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]},
   histProv:5,
   histInfl:[32.38,33.02,32.64,32.38,33.2,33,33.2,28.63,26.26,23.69,20.86,17.95],
   histM:{'Warcalde':{f25:[null,null,null,null,null,null,null,null,null,null,null,null],c25:[null,null,null,null,null,null,null,null,null,null,null,null],f26:[86953796,104800180,139171351,164230339,148048070,81130088,null,null,null,null,null,null],c26:[4600,4888,5734,5555,5076,3565,null,null,null,null,null,null]},'Güemes':{f25:[60446004.07,58157345,77241577.95,74139906.15,84730106.95,87131960.34,97661243.3,102341597.69,87604139.36,86277172.15,89592178.31,89975883.57],c25:[3314,3158,4295,3951,3850,3982,4171,4369,3786,3389,3293,3073],f26:[70929020,80354165,92482435,91429736,119554352,65932767.18,null,null,null,null,null,null],c26:[2862,3035,3468,3078,3766,2201,null,null,null,null,null,null]},'Capke':{f25:[43114540,44193637,61172000,53647292,56380353,56251040,66315097,63108787,57139899,59468850.75,54167071,55749192],c25:[3975,4010,5443,4537,4563,4556,5150,4820,4186,4136,3798,3376],f26:[57311287,62013909,64588105,60480900,67982303,47701830,null,null,null,null,null,null],c26:[3694,4058,4249,3811,4192,2933,null,null,null,null,null,null]}}
@@ -376,18 +376,19 @@ function projFact(s,L,m){const P=cubAjust(L,m)*(1+state.pDelta[s][L]/100);const 
 
 function finInteresMes(onlyL){var out=[0,0,0,0,0,0];if(!state.cash||!state.cash.inicio)return out;var inicio=new Date(state.cash.inicio+'T00:00:00');if(isNaN(inicio.getTime()))return out;var by=inicio.getFullYear();(state.cash.financiaciones||[]).forEach(function(f){if(!(+f.tasa>0))return;if(onlyL&&f.unidad!==onlyL)return;var am=amortiza(f);am.rows.forEach(function(r,idx){var d;if(f.modo==='semanal'){var pr=Math.max(1,Math.round(+f.primera||1)),cada=Math.max(1,Math.round(+f.cada||4));var wk=(pr-1)+idx*cada;d=new Date(inicio.getTime());d.setDate(d.getDate()+wk*7);}else{var dia=Math.round(+f.dia||1);var fm=(dia>=inicio.getDate())?inicio.getMonth():inicio.getMonth()+1;var dt=new Date(by,fm+idx,1);var ld=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();dt.setDate(Math.min(dia,ld));d=dt;}if(d.getFullYear()===by){var mi=d.getMonth()-6;if(mi>=0&&mi<6)out[mi]+=r.interes;}});});return out;}
 function econ(s,m,onlyL,useReal){
-  let ventas=0,cmv=0,reg=0,imp=0,mant=0,sueldos=0,alquiler=0,servicios=0;
+  let ventas=0,cmv=0,reg=0,imp=0,mant=0,sueldos=0,alquiler=0,servicios=0,gbanco=0;
   LOCALS.forEach(function(L){
     if(onlyL&&L!==onlyL)return;
     const f=useReal?state.real[L].fact[m]:projFact(s,L,m);const c=state.costos[L];
     ventas+=f;cmv+=f*(c.cmv+state.cmvStress[s])/100;reg+=f*c.reg/100;imp+=f*c.imp/100;mant+=f*c.mant/100;
-    sueldos+=c.sueldos[m];alquiler+=c.alquiler[m];servicios+=c.servicios[m];
+    sueldos+=c.sueldos[m];alquiler+=c.alquiler[m];servicios+=c.servicios[m];gbanco+=(c.gastosBanco?(+c.gastosBanco[m]||0):0);
   });
-  const fijos=sueldos+alquiler+servicios;
+  const fijos=sueldos+alquiler+servicios+gbanco;
   const interes=state.deuda.invInt[m]*state.fx[s];
+  const bancoInt=(state.deuda.bancoInt?(+state.deuda.bancoInt[m]||0):0);
   const interesesFin=finInteresMes(onlyL)[m];
   const extra=Array.isArray(state.extraPL)?state.extraPL.reduce(function(a,e){if(!e)return a;if(onlyL&&e.unidad!==onlyL)return a;return a+((e.signo===1?1:-1)*(+(e.vals&&e.vals[m])||0));},0):0;
-  return {ventas,cmv,varOtros:reg+imp+mant,sueldos,alquiler,servicios,fijos,interes,interesesFin,extra,res:ventas-cmv-reg-imp-mant-fijos-interes-interesesFin+extra};
+  return {ventas,cmv,varOtros:reg+imp+mant,sueldos,alquiler,servicios,gbanco,fijos,interes,bancoInt,interesesFin,extra,res:ventas-cmv-reg-imp-mant-fijos-interes-bancoInt-interesesFin+extra};
 }
 function lagVal(s,m,onlyL,useReal,lag,key){
   lag=+lag;if(!isFinite(lag)||lag<0)lag=0;
@@ -406,7 +407,7 @@ function cajaSerie(s,onlyL,useReal,untilClosed){
     const pagoCMV=lagVal(s,m,onlyL,useReal,state.lagProv/30,'cmv');
     const pagoVar=lagVal(s,m,onlyL,useReal,state.lagImp/30,'varOtros');
     const vtoInv=(state.deuda.invCap[m]+state.deuda.invInt[m])*state.fx[s];
-    const deuda=state.deuda.fisco[m]+state.deuda.banco[m]+vtoInv;
+    const deuda=state.deuda.fisco[m]+(+(state.deuda.bancoCap&&state.deuda.bancoCap[m])||0)+(+(state.deuda.bancoInt&&state.deuda.bancoInt[m])||0)+vtoInv;
     const flujo=cobr-pagoCMV-pagoVar-e.fijos-deuda;
     acum+=flujo;out.push({flujo,acum,vtoInv,ventas:e.ventas});
   }
@@ -454,14 +455,14 @@ function buildCosts(){
   const vr=[['cmv','CMV'],['reg','Regalías'],['imp','Impuestos'],['mant','Mantenimiento']];
   document.getElementById('costVar').innerHTML='<table><thead><tr><th class="l">Variable · % de ventas</th><th>Warcalde</th><th>Güemes</th><th>Capke</th></tr></thead><tbody>'+
     vr.map(function(r){return '<tr><td class="l">'+r[1]+'</td>'+LOCALS.map(L=>'<td>'+inp('costos.'+L+'.'+r[0],{dec:1})+'</td>').join('')+'</tr>';}).join('')+'</tbody></table>';
-  const fr=[['sueldos','Sueldos / CS'],['aguinaldo','· del cual aguinaldo'],['alquiler','Alquiler'],['servicios','Servicios']];
+  const fr=[['sueldos','Sueldos / CS'],['aguinaldo','· del cual aguinaldo'],['alquiler','Alquiler'],['servicios','Servicios'],['gastosBanco','Gastos bancarios']];
   let fh='<table><thead><tr><th class="l">Fijo · $ por mes</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th></tr></thead><tbody>';
   LOCALS.forEach(function(L){fr.forEach(function(r){var ag=r[0]==='aguinaldo';fh+='<tr'+(ag?' style="color:var(--soft);font-size:11.5px"':'')+'><td class="l">'+L+' · '+r[1]+'</td>'+MESES.map(function(_,m){var p=ag?('aguinaldo.'+L+'.'+m):('costos.'+L+'.'+r[0]+'.'+m);return '<td>'+inp(p,{dec:0})+'</td>';}).join('')+'</tr>';});});
   fh+='</tbody></table>';
   document.getElementById('costFix').innerHTML=fh;
 }
 function buildDebt(){
-  const rows=[['fisco','Fisco ($)','M'],['banco','Banco ($)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
+  const rows=[['fisco','Fisco ($)','M'],['bancoCap','Banco capital ($)','M'],['bancoInt','Banco interés ($)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
   document.getElementById('debtBody').innerHTML=rows.map(function(r){
     const k=r[0],lbl=r[1],u=r[2];
     return '<tr><td class="l">'+lbl+'</td>'+MESES.map((_,m)=>'<td>'+inp('deuda.'+k+'.'+m,{dec:0})+'</td>').join('')+'</tr>';
@@ -482,7 +483,7 @@ function renderBreakeven(){
   LOCALS.forEach(function(L){
     var c=state.costos[L],mv=mvPct(L);
     var ag=(state.aguinaldo&&state.aguinaldo[L])?(+state.aguinaldo[L][rm]||0):0;
-    var fijosRec=(c.sueldos[rm]-ag)+c.alquiler[rm]+c.servicios[rm];
+    var fijosRec=(c.sueldos[rm]-ag)+c.alquiler[rm]+c.servicios[rm]+(c.gastosBanco?(+c.gastosBanco[rm]||0):0);
     var be=mv>0?fijosRec/mv:0;
     var cubR=(state.real[L].cub[rm]>0)?state.real[L].fact[rm]/state.real[L].cub[rm]:cubAjust(L,rm);
     var beCub=cubR>0?be/cubR:0;
@@ -666,7 +667,7 @@ function renderOutputs(){
   const faltas=serie.map((x,m)=>({x,m})).filter(o=>o.x.vtoInv>0&&o.x.acum<0).map(o=>MESES[o.m]);
   document.getElementById('integralNote').textContent=faltas.length?('En este escenario no llegás al vencimiento de '+faltas.join(', ')+'. Ahí tenés que renegociar plazo o quita, o conseguir fondeo antes.'):'En este escenario cubrís todos los vencimientos con inversores. Mirá igual el piso de caja: si queda muy fino, un imprevisto te complica.';
 
-  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Intereses inversores','interes',-1],['− Intereses financiaciones','interesesFin',-1]];
+  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Gastos bancarios','gbanco',-1],['− Intereses inversores','interes',-1],['− Intereses banco','bancoInt',-1],['− Intereses financiaciones','interesesFin',-1]];
   let eb='';
   eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,false)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
   (state.extraPL||[]).forEach(function(e){if(!e)return;if(onlyL&&e.unidad!==onlyL)return;var has=(e.vals||[]).some(function(v){return +v;});if(!e.nombre&&!has)return;var sg=(e.signo===1?1:-1);var sem=0;var cells=MESES.map(function(_,m){var val=sg*(+(e.vals&&e.vals[m])||0);sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');var lbl=(sg<0?'\u2212 ':'+ ')+esc(e.nombre||'concepto')+((!onlyL&&e.unidad)?(' \u00b7 '+esc(e.unidad)):'');eb+='<tr><td class="l">'+lbl+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
@@ -735,7 +736,7 @@ function corteData(m,onlyL){
     var promReal=c15>0?f15/c15:0,promAjust=cubAjust(L,m);
     real15+=f15;cmv15+=cm15;esp15+=esp;cierreV+=cV;cierreCMV+=cV*ratio;
     regimp+=cV*(c.reg+c.imp+c.mant)/100;
-    fijos+=c.sueldos[m]+c.alquiler[m]+c.servicios[m];
+    fijos+=c.sueldos[m]+c.alquiler[m]+c.servicios[m]+(c.gastosBanco?(+c.gastosBanco[m]||0):0);
     sumCub15+=c15;sumAjustW+=promAjust*c15;
     per.push({L:L,f15:f15,esp:esp,ritmo:esp>0?f15/esp:0,cierre:cV,cub15:c15,promReal:promReal,promAjust:promAjust});
   });
@@ -1004,12 +1005,14 @@ function normalizar(){
     });
   }}catch(e){}
   try{if(!state._inflReal2026&&Array.isArray(state.histInfl)){var _ir=[32.38,33.02,32.64,32.38,33.2];for(var _k=0;_k<5;_k++)state.histInfl[_k]=_ir[_k];state._inflReal2026=true;}}catch(e){}
+  try{if(state.deuda){if(!Array.isArray(state.deuda.bancoCap))state.deuda.bancoCap=[0,0,0,0,0,0];if(!Array.isArray(state.deuda.bancoInt))state.deuda.bancoInt=[0,0,0,0,0,0];delete state.deuda.banco;}}catch(e){}
   LOCALS.forEach(function(L){
     if(!state.costos||!state.costos[L])return;
     ['sueldos','alquiler','servicios'].forEach(function(k){
       var v=state.costos[L][k];
       if(!Array.isArray(v)){state.costos[L][k]=[v,v,v,v,v,v];}
     });
+    if(!Array.isArray(state.costos[L].gastosBanco))state.costos[L].gastosBanco=[0,0,0,0,0,0];
   });
   if(state.lagUnit!=='dias'){
     state.lagCobro=Math.round((+state.lagCobro||0)*30);
@@ -1028,6 +1031,7 @@ function normalizar(){
   LOCALS.forEach(function(L){if(!Array.isArray(state.aguinaldo[L]))state.aguinaldo[L]=[0,0,0,0,0,0];});
   if(!state.cmvHist)state.cmvHist={};if(!state.cmvReal)state.cmvReal={};
   LOCALS.forEach(function(L){var base=(state.costos&&state.costos[L]?+state.costos[L].cmv:0)||0;if(!Array.isArray(state.cmvHist[L])||state.cmvHist[L].length!==18)state.cmvHist[L]=Array(18).fill(base);if(!Array.isArray(state.cmvReal[L])||state.cmvReal[L].length!==6)state.cmvReal[L]=Array(6).fill(base);});
+  try{if(!state._cmvCapke2025&&state.cmvHist&&Array.isArray(state.cmvHist['Capke'])){var _h25=[31.26,32.36,32.43,32.48,32.58,31.22,35.41,30.27,33.97,35.85,30.84,33.45];var _h26=[30.29,31.67,35.10,35.21,31.94];for(var _ci=0;_ci<12;_ci++)state.cmvHist['Capke'][_ci]=_h25[_ci];for(var _cj=0;_cj<5;_cj++)state.cmvHist['Capke'][12+_cj]=_h26[_cj];state.cmvHist['Capke'][17]=0;state._cmvCapke2025=true;}}catch(e){}
   if(!state.cash)state.cash={};
   var _cs=state.cash;
   if(!_cs.cajaIniU){
