@@ -1332,7 +1332,7 @@ function initColapsables(){
     e.addEventListener('click',function(){e.classList.toggle('col');box.classList.toggle('col');});
   });
 }
-var CLAVE_ACCESO='standard69';
+var CLAVE_ACCESO='std69';
 function unlock(){var ls=document.getElementById('lockScreen');if(ls)ls.style.display='none';if(!window.__booted){window.__booted=true;bootstrap();initColapsables();}}
 (function(){var b=document.getElementById('lockBtn'),p=document.getElementById('lockPass'),er=document.getElementById('lockErr');
  function tryUnlock(){if(p&&p.value===CLAVE_ACCESO){unlock();}else{if(er)er.style.display='block';if(p){p.value='';p.focus();}}}
