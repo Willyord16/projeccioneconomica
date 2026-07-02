@@ -335,6 +335,7 @@ const SLBL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'};
 
 var VIEWS=['caja','resultados','seguimiento','supuestos','palancas','deuda'];
 var curView=(function(){var h=(location.hash||'').replace('#','');return VIEWS.indexOf(h)>=0?h:'caja';})();
+function renderActiveModule(){if(curView==='deuda'&&typeof renderDeuda==='function')renderDeuda();else if(curView==='palancas'&&typeof renderPlan==='function')renderPlan();}
 function setView(v){
   if(VIEWS.indexOf(v)<0)v='caja';curView=v;
   var nav=document.getElementById('vnav');
@@ -345,6 +346,7 @@ function setView(v){
     if(box&&(box.classList.contains('card')||box.classList.contains('kpis')))box.classList.toggle('hidden-view',!show);
   });
   try{if((location.hash||'').replace('#','')!==v)history.replaceState(null,'','#'+v);}catch(e){}
+  renderActiveModule();
   if(chart)setTimeout(function(){try{chart.resize();}catch(e){}},30);
 }
 
@@ -1298,7 +1300,7 @@ function render(){
   document.querySelectorAll('#scenTabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===scen));
   document.getElementById('scenLbl').textContent=SLBL[scen];
   buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();buildCorte();buildDesvioView();buildCmvView();buildCmvEntry();buildExtraPL();buildHistTabs();buildHistEntry();
-  buildCash();bindInputs(document);bindCash(document);if(typeof caucInvalidate==='function')caucInvalidate();renderOutputs();if(typeof renderDeuda==='function')renderDeuda();if(typeof renderPlan==='function')renderPlan();setView(curView);
+  buildCash();bindInputs(document);bindCash(document);if(typeof caucInvalidate==='function')caucInvalidate();renderOutputs();setView(curView);
 }
 
 document.querySelectorAll('#vnav button').forEach(function(b){b.onclick=function(){setView(b.dataset.view);};});
@@ -1326,7 +1328,7 @@ function soltarLock(){if(!tengoLock)return;tengoLock=false;escribirLock(true);mi
 function iniciarLatido(){detenerLatido();latidoT=setInterval(function(){if(tengoLock&&editable)escribirLock(false);},45000);}
 function detenerLatido(){if(latidoT){clearInterval(latidoT);latidoT=null;}}
 function avisarLockPasivo(){leerLock(function(lk){if(lockActivo(lk)){var h=lk.since?(' desde '+new Date(lk.since).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})):'';setEstado((lk.user||'otro usuario')+' editando'+h,'pw');}});}
-function setEditable(b){editable=b;if(!b){soltarLock();detenerLatido();}buildExtraPL();bindInputs(document);document.querySelectorAll('input[data-path]').forEach(function(el){el.disabled=!b;});document.querySelectorAll('#cashEdit input,#cashEdit select,#cashEdit .cashbtn,#cashEdit .delx').forEach(function(el){el.disabled=!b;});var btn=document.getElementById('btnEditar');if(btn)btn.textContent=b?'Editando':'Editar';setEstado(b?'guardado':'modo lectura',b?'pg':'pf');updateUndoBtn();if(typeof renderDeuda==='function')renderDeuda();if(typeof renderPlan==='function')renderPlan();}
+function setEditable(b){editable=b;if(!b){soltarLock();detenerLatido();}buildExtraPL();bindInputs(document);document.querySelectorAll('input[data-path]').forEach(function(el){el.disabled=!b;});document.querySelectorAll('#cashEdit input,#cashEdit select,#cashEdit .cashbtn,#cashEdit .delx').forEach(function(el){el.disabled=!b;});var btn=document.getElementById('btnEditar');if(btn)btn.textContent=b?'Editando':'Editar';setEstado(b?'guardado':'modo lectura',b?'pg':'pf');updateUndoBtn();renderActiveModule();}
 var undoStack=[],UNDO_MAX=60;
 function snapState(){try{var s=JSON.stringify(state);if(undoStack.length&&undoStack[undoStack.length-1]===s)return;undoStack.push(s);if(undoStack.length>UNDO_MAX)undoStack.shift();updateUndoBtn();}catch(e){}}
 function updateUndoBtn(){var b=document.getElementById('btnUndo');if(b)b.disabled=(!editable||undoStack.length===0);}
