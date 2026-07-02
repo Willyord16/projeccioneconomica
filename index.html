@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --text:#16212B;--soft:#4A5763;--bg:#EBEEF2;--card:#FFFFFF;--line:#D9DFE6;
@@ -722,6 +722,7 @@ function drawChart(){
       tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtM(c.parsed.y*M)}}},
     scales:{y:{ticks:{font:{family:'IBM Plex Mono',size:11},color:'#4A5763',callback:v=>(v<0?'-':'')+'$'+fmtAR(Math.abs(v),0)+'M'},grid:{color:'#E4E8EC'}},
       x:{grid:{display:false},ticks:{font:{family:'Inter',size:12},color:'#4A5763'}}}};
+  if(typeof Chart==='undefined'){return;}
   if(chart){chart.data=data;chart.update();}else chart=new Chart(document.getElementById('chart'),{type:'line',data,options:opts});
 }
 
@@ -1313,7 +1314,7 @@ document.getElementById('fileImport').onchange=function(e){const f=e.target.file
 var SB_URL='https://hprzsjhebvrmwapizptv.supabase.co';
 var SB_KEY='sb_publishable_AcZUtJqQy96_uKKYQtqa2A_B4rYQvNX';
 var CLAVE_EDICION='caja2026';
-var sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
+var sb=null;
 var saveT=null;
 function setEstado(txt,cls){var e=document.getElementById('nubeEstado');if(e){e.textContent=txt;e.className='pill '+(cls||'pf');}}
 var LOCK_STALE_MS=180000;
@@ -1341,6 +1342,7 @@ function guardarNube(){
   },800);
 }
 function bootstrap(){
+  if(!sb&&window.supabase)sb=window.supabase.createClient(SB_URL,SB_KEY);
   if(!sb){setEstado('sin conexión','pd');render();return;}
   setEstado('cargando…','pf');
   var _booted=false;function _boot(ok){if(_booted)return;_booted=true;render();setEstado(ok?'modo lectura':'sin conexión',ok?'pf':'pd');if(ok)avisarLockPasivo();}
