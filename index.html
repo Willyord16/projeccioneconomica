@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --text:#16212B;--soft:#4A5763;--bg:#EBEEF2;--card:#FFFFFF;--line:#D9DFE6;
@@ -323,7 +323,7 @@ let state={
   aguinaldo:{'Warcalde':[0,0,0,0,0,0],'Güemes':[0,0,0,0,0,0],'Capke':[0,0,0,0,0,0]},
   qDelta:{pes:{'Warcalde':-12,'Güemes':-18,'Capke':-10},mod:{'Warcalde':-6,'Güemes':-12,'Capke':-4},opt:{'Warcalde':4,'Güemes':0,'Capke':5}},
   pDelta:{pes:{'Warcalde':-5,'Güemes':-6,'Capke':-4},mod:{'Warcalde':-2,'Güemes':-4,'Capke':0},opt:{'Warcalde':2,'Güemes':0,'Capke':3}},
-  deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),banco:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]},
+  deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),bancoCap:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),bancoInt:[0,0,0,0,0,0],invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]},
   plan:{local:'Güemes','Warcalde':{base:'',pal:{cmv:{meta:'',accion:''},suel:{hoy:'',meta:'',accion:''},imp:{hoy:'',meta:'',tent:true,accion:''},cub:{accion:''}},real:{cmv:[],suel:[],imp:[],neta:[]},h25:{cmv:[],suel:[],imp:[],neta:[]},fact:[]},'Güemes':{base:'',pal:{cmv:{meta:37,accion:'Renegociar proveedores clave · estandarizar porciones · control de merma.'},suel:{hoy:37,meta:35.5,accion:'Reordenar turnos a la demanda · medir productividad por cubierto.'},imp:{hoy:5.4,meta:5.4,tent:true,accion:'Con contador: IIBB convenio multilateral · base municipal · impuesto al cheque. IVA no.'},cub:{accion:'Ajustar la carta al ritmo de inflación para que el precio real no se atrase.'}},real:{cmv:[],suel:[],imp:[],neta:[]},h25:{cmv:[],suel:[],imp:[],neta:[]},fact:[]},'Capke':{base:'',pal:{cmv:{meta:'',accion:''},suel:{hoy:'',meta:'',accion:''},imp:{hoy:'',meta:'',tent:true,accion:''},cub:{accion:''}},real:{cmv:[],suel:[],imp:[],neta:[]},h25:{cmv:[],suel:[],imp:[],neta:[]},fact:[]}},
   caucion:{arancelM:0.31744,derM:0.01512,iva:21,tramos:[{id:'A',nombre:'Tramo A',freq:14,prest:'',renos:[{fecha:'01/07',dias:14,capital:27750000,tna:20.2}]},{id:'B',nombre:'Tramo B',freq:'',prest:'',renos:[{fecha:'01/07',dias:'',capital:'',tna:''}]},{id:'C',nombre:'Tramo C \u00b7 t\u00edtulos alquilados',freq:'',prest:'',renos:[{fecha:'01/07',dias:'',capital:'',tna:''}]}]},
   histProv:5,
@@ -396,7 +396,7 @@ function econ(s,m,onlyL,useReal){
     sueldos+=c.sueldos[m];alquiler+=c.alquiler[m];servicios+=c.servicios[m];
   });
   const fijos=sueldos+alquiler+servicios;
-  const interes=state.deuda.invInt[m]*state.fx[s];
+  const interes=state.deuda.invInt[m]*state.fx[s]+((state.deuda.bancoInt&&state.deuda.bancoInt[m])||0);
   const interesesFin=finInteresMes(onlyL)[m];
   const caucion=onlyL?0:(typeof caucMesTot==='function'?caucMesTot(m):0);
   const extra=Array.isArray(state.extraPL)?state.extraPL.reduce(function(a,e){if(!e)return a;if(onlyL&&e.unidad!==onlyL)return a;return a+((e.signo===1?1:-1)*(+(e.vals&&e.vals[m])||0));},0):0;
@@ -419,7 +419,7 @@ function cajaSerie(s,onlyL,useReal,untilClosed){
     const pagoCMV=lagVal(s,m,onlyL,useReal,state.lagProv/30,'cmv');
     const pagoVar=lagVal(s,m,onlyL,useReal,state.lagImp/30,'varOtros');
     const vtoInv=(state.deuda.invCap[m]+state.deuda.invInt[m])*state.fx[s];
-    const deuda=state.deuda.fisco[m]+state.deuda.banco[m]+vtoInv;
+    const deuda=state.deuda.fisco[m]+((state.deuda.bancoCap&&state.deuda.bancoCap[m])||0)+((state.deuda.bancoInt&&state.deuda.bancoInt[m])||0)+vtoInv;
     const flujo=cobr-pagoCMV-pagoVar-e.fijos-deuda;
     acum+=flujo;out.push({flujo,acum,vtoInv,ventas:e.ventas});
   }
@@ -474,7 +474,7 @@ function buildCosts(){
   document.getElementById('costFix').innerHTML=fh;
 }
 function buildDebt(){
-  const rows=[['fisco','Fisco ($)','M'],['banco','Banco ($)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
+  const rows=[['fisco','Fisco ($)','M'],['bancoCap','Banco capital ($)','M'],['bancoInt','Banco interés ($)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
   document.getElementById('debtBody').innerHTML=rows.map(function(r){
     const k=r[0],lbl=r[1],u=r[2];
     return '<tr><td class="l">'+lbl+'</td>'+MESES.map((_,m)=>'<td>'+inp('deuda.'+k+'.'+m,{dec:0})+'</td>').join('')+'</tr>';
@@ -1007,6 +1007,11 @@ function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildC
 const DEFAULTS=JSON.parse(JSON.stringify(state));
 function normalizar(){
   if(!Array.isArray(state.extraPL))state.extraPL=[];
+  if(state.deuda){
+    if(!Array.isArray(state.deuda.bancoCap))state.deuda.bancoCap=Array.isArray(state.deuda.banco)?state.deuda.banco.slice():[0,0,0,0,0,0];
+    if(!Array.isArray(state.deuda.bancoInt))state.deuda.bancoInt=[0,0,0,0,0,0];
+    if('banco' in state.deuda)delete state.deuda.banco;
+  }
   try{if(DEFAULTS&&typeof DEFAULTS==='object'){
     Object.keys(DEFAULTS).forEach(function(k){if(state[k]==null)state[k]=JSON.parse(JSON.stringify(DEFAULTS[k]));});
     ['hist','real','costos','aguinaldo','cmvHist','cmvReal','corte','share','histM'].forEach(function(key){
@@ -1314,7 +1319,7 @@ document.getElementById('fileImport').onchange=function(e){const f=e.target.file
 var SB_URL='https://hprzsjhebvrmwapizptv.supabase.co';
 var SB_KEY='sb_publishable_AcZUtJqQy96_uKKYQtqa2A_B4rYQvNX';
 var CLAVE_EDICION='caja2026';
-var sb=null;
+var sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
 var saveT=null;
 function setEstado(txt,cls){var e=document.getElementById('nubeEstado');if(e){e.textContent=txt;e.className='pill '+(cls||'pf');}}
 var LOCK_STALE_MS=180000;
@@ -1342,7 +1347,6 @@ function guardarNube(){
   },800);
 }
 function bootstrap(){
-  if(!sb&&window.supabase)sb=window.supabase.createClient(SB_URL,SB_KEY);
   if(!sb){setEstado('sin conexión','pd');render();return;}
   setEstado('cargando…','pf');
   var _booted=false;function _boot(ok){if(_booted)return;_booted=true;render();setEstado(ok?'modo lectura':'sin conexión',ok?'pf':'pd');if(ok)avisarLockPasivo();}
