@@ -147,7 +147,15 @@
     <button data-view="resultados">Resultados<span class="vd">P&amp;L · equilibrio</span></button>
     <button data-view="seguimiento">Seguimiento<span class="vd">corte 15 · desvío</span></button>
     <button data-view="supuestos">Supuestos<span class="vd">escenarios · costos</span></button>
+    <button data-view="palancas">Palancas<span class="vd">plan · impacto de gestión</span></button>
+    <button data-view="deuda">Deuda<span class="vd">caución · costo financiero</span></button>
   </div>
+
+  <div class="eye" data-view="palancas">Plan a diciembre · impacto de mi gestión</div>
+  <div class="card" id="planWrap"></div>
+
+  <div class="eye" data-view="deuda">Caución bursátil · registro y proyección</div>
+  <div class="card" id="deudaWrap"></div>
 
   <div class="eye" data-view="supuestos">Parámetros generales</div>
   <div class="card"><div class="gridc" id="globals"></div></div>
@@ -183,7 +191,7 @@
 
   <div class="eye" data-view="supuestos">Deuda · calendario de vencimientos</div>
   <div class="card">
-    <p class="sub">Fisco y banco en pesos. Inversores en USD (se convierten al TC real del escenario). El interés (inversores y banco) va al económico; el capital + interés van a la caja.</p>
+    <p class="sub">Fisco y banco en pesos. Inversores en USD (se convierten al TC real del escenario). El interés va al económico; capital + interés van a la caja.</p>
     <div class="scr"><table><thead><tr><th class="l">Concepto</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th></tr></thead>
     <tbody id="debtBody"></tbody></table></div>
   </div>
@@ -308,14 +316,16 @@ let state={
     'Capke':{fact:[60,59,58,0,0,0].map(x=>x*M), cub:[3350,3300,3250,0,0,0]}
   },
   costos:{
-    'Warcalde':{cmv:30.7,reg:4.5,imp:8.7,mant:1.2,sueldos:Array(6).fill(39.5*M),alquiler:Array(6).fill(10.4*M),servicios:Array(6).fill(5.8*M),gastosBanco:Array(6).fill(0)},
-    'Güemes':{cmv:35.7,reg:4.5,imp:10.3,mant:1.0,sueldos:Array(6).fill(30.9*M),alquiler:Array(6).fill(3.2*M),servicios:Array(6).fill(4.2*M),gastosBanco:Array(6).fill(0)},
-    'Capke':{cmv:33.3,reg:5.1,imp:7.0,mant:0.5,sueldos:Array(6).fill(21.1*M),alquiler:Array(6).fill(2.1*M),servicios:Array(6).fill(3.3*M),gastosBanco:Array(6).fill(0)}
+    'Warcalde':{cmv:30.7,reg:4.5,imp:8.7,mant:1.2,sueldos:Array(6).fill(39.5*M),alquiler:Array(6).fill(10.4*M),servicios:Array(6).fill(5.8*M)},
+    'Güemes':{cmv:35.7,reg:4.5,imp:10.3,mant:1.0,sueldos:Array(6).fill(30.9*M),alquiler:Array(6).fill(3.2*M),servicios:Array(6).fill(4.2*M)},
+    'Capke':{cmv:33.3,reg:5.1,imp:7.0,mant:0.5,sueldos:Array(6).fill(21.1*M),alquiler:Array(6).fill(2.1*M),servicios:Array(6).fill(3.3*M)}
   },
   aguinaldo:{'Warcalde':[0,0,0,0,0,0],'Güemes':[0,0,0,0,0,0],'Capke':[0,0,0,0,0,0]},
   qDelta:{pes:{'Warcalde':-12,'Güemes':-18,'Capke':-10},mod:{'Warcalde':-6,'Güemes':-12,'Capke':-4},opt:{'Warcalde':4,'Güemes':0,'Capke':5}},
   pDelta:{pes:{'Warcalde':-5,'Güemes':-6,'Capke':-4},mod:{'Warcalde':-2,'Güemes':-4,'Capke':0},opt:{'Warcalde':2,'Güemes':0,'Capke':3}},
-  deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),bancoCap:[0,0,0,0,0,0],bancoInt:[0,0,0,0,0,0],invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]},
+  deuda:{fisco:[1.5,1.5,1.5,1.5,1.5,1.5].map(x=>x*M),banco:[0.8,0.8,0.8,0.8,0.8,0.8].map(x=>x*M),invCap:[0,0,40000,0,0,60000],invInt:[4000,4000,4000,3000,3000,3000]},
+  plan:{local:'Güemes','Warcalde':{base:'',pal:{cmv:{meta:'',accion:''},suel:{hoy:'',meta:'',accion:''},imp:{hoy:'',meta:'',tent:true,accion:''},cub:{accion:''}},real:{cmv:[],suel:[],imp:[],neta:[]},h25:{cmv:[],suel:[],imp:[],neta:[]},fact:[]},'Güemes':{base:'',pal:{cmv:{meta:37,accion:'Renegociar proveedores clave · estandarizar porciones · control de merma.'},suel:{hoy:37,meta:35.5,accion:'Reordenar turnos a la demanda · medir productividad por cubierto.'},imp:{hoy:5.4,meta:5.4,tent:true,accion:'Con contador: IIBB convenio multilateral · base municipal · impuesto al cheque. IVA no.'},cub:{accion:'Ajustar la carta al ritmo de inflación para que el precio real no se atrase.'}},real:{cmv:[],suel:[],imp:[],neta:[]},h25:{cmv:[],suel:[],imp:[],neta:[]},fact:[]},'Capke':{base:'',pal:{cmv:{meta:'',accion:''},suel:{hoy:'',meta:'',accion:''},imp:{hoy:'',meta:'',tent:true,accion:''},cub:{accion:''}},real:{cmv:[],suel:[],imp:[],neta:[]},h25:{cmv:[],suel:[],imp:[],neta:[]},fact:[]}},
+  caucion:{arancelM:0.31744,derM:0.01512,iva:21,tramos:[{id:'A',nombre:'Tramo A',freq:14,prest:'',renos:[{fecha:'01/07',dias:14,capital:27750000,tna:20.2}]},{id:'B',nombre:'Tramo B',freq:'',prest:'',renos:[{fecha:'01/07',dias:'',capital:'',tna:''}]},{id:'C',nombre:'Tramo C \u00b7 t\u00edtulos alquilados',freq:'',prest:'',renos:[{fecha:'01/07',dias:'',capital:'',tna:''}]}]},
   histProv:5,
   histInfl:[32.38,33.02,32.64,32.38,33.2,33,33.2,28.63,26.26,23.69,20.86,17.95],
   histM:{'Warcalde':{f25:[null,null,null,null,null,null,null,null,null,null,null,null],c25:[null,null,null,null,null,null,null,null,null,null,null,null],f26:[86953796,104800180,139171351,164230339,148048070,81130088,null,null,null,null,null,null],c26:[4600,4888,5734,5555,5076,3565,null,null,null,null,null,null]},'Güemes':{f25:[60446004.07,58157345,77241577.95,74139906.15,84730106.95,87131960.34,97661243.3,102341597.69,87604139.36,86277172.15,89592178.31,89975883.57],c25:[3314,3158,4295,3951,3850,3982,4171,4369,3786,3389,3293,3073],f26:[70929020,80354165,92482435,91429736,119554352,65932767.18,null,null,null,null,null,null],c26:[2862,3035,3468,3078,3766,2201,null,null,null,null,null,null]},'Capke':{f25:[43114540,44193637,61172000,53647292,56380353,56251040,66315097,63108787,57139899,59468850.75,54167071,55749192],c25:[3975,4010,5443,4537,4563,4556,5150,4820,4186,4136,3798,3376],f26:[57311287,62013909,64588105,60480900,67982303,47701830,null,null,null,null,null,null],c26:[3694,4058,4249,3811,4192,2933,null,null,null,null,null,null]}}
@@ -323,7 +333,7 @@ let state={
 let scen='pes', view='cons', localTab='Warcalde', chart, editable=false, corteMes=0, corteView='cons';
 const SLBL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'};
 
-var VIEWS=['caja','resultados','seguimiento','supuestos'];
+var VIEWS=['caja','resultados','seguimiento','supuestos','palancas','deuda'];
 var curView=(function(){var h=(location.hash||'').replace('#','');return VIEWS.indexOf(h)>=0?h:'caja';})();
 function setView(v){
   if(VIEWS.indexOf(v)<0)v='caja';curView=v;
@@ -376,19 +386,19 @@ function projFact(s,L,m){const P=cubAjust(L,m)*(1+state.pDelta[s][L]/100);const 
 
 function finInteresMes(onlyL){var out=[0,0,0,0,0,0];if(!state.cash||!state.cash.inicio)return out;var inicio=new Date(state.cash.inicio+'T00:00:00');if(isNaN(inicio.getTime()))return out;var by=inicio.getFullYear();(state.cash.financiaciones||[]).forEach(function(f){if(!(+f.tasa>0))return;if(onlyL&&f.unidad!==onlyL)return;var am=amortiza(f);am.rows.forEach(function(r,idx){var d;if(f.modo==='semanal'){var pr=Math.max(1,Math.round(+f.primera||1)),cada=Math.max(1,Math.round(+f.cada||4));var wk=(pr-1)+idx*cada;d=new Date(inicio.getTime());d.setDate(d.getDate()+wk*7);}else{var dia=Math.round(+f.dia||1);var fm=(dia>=inicio.getDate())?inicio.getMonth():inicio.getMonth()+1;var dt=new Date(by,fm+idx,1);var ld=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();dt.setDate(Math.min(dia,ld));d=dt;}if(d.getFullYear()===by){var mi=d.getMonth()-6;if(mi>=0&&mi<6)out[mi]+=r.interes;}});});return out;}
 function econ(s,m,onlyL,useReal){
-  let ventas=0,cmv=0,reg=0,imp=0,mant=0,sueldos=0,alquiler=0,servicios=0,gbanco=0;
+  let ventas=0,cmv=0,reg=0,imp=0,mant=0,sueldos=0,alquiler=0,servicios=0;
   LOCALS.forEach(function(L){
     if(onlyL&&L!==onlyL)return;
     const f=useReal?state.real[L].fact[m]:projFact(s,L,m);const c=state.costos[L];
     ventas+=f;cmv+=f*(c.cmv+state.cmvStress[s])/100;reg+=f*c.reg/100;imp+=f*c.imp/100;mant+=f*c.mant/100;
-    sueldos+=c.sueldos[m];alquiler+=c.alquiler[m];servicios+=c.servicios[m];gbanco+=(c.gastosBanco?(+c.gastosBanco[m]||0):0);
+    sueldos+=c.sueldos[m];alquiler+=c.alquiler[m];servicios+=c.servicios[m];
   });
-  const fijos=sueldos+alquiler+servicios+gbanco;
+  const fijos=sueldos+alquiler+servicios;
   const interes=state.deuda.invInt[m]*state.fx[s];
-  const bancoInt=(state.deuda.bancoInt?(+state.deuda.bancoInt[m]||0):0);
   const interesesFin=finInteresMes(onlyL)[m];
+  const caucion=onlyL?0:(typeof caucMesTot==='function'?caucMesTot(m):0);
   const extra=Array.isArray(state.extraPL)?state.extraPL.reduce(function(a,e){if(!e)return a;if(onlyL&&e.unidad!==onlyL)return a;return a+((e.signo===1?1:-1)*(+(e.vals&&e.vals[m])||0));},0):0;
-  return {ventas,cmv,varOtros:reg+imp+mant,sueldos,alquiler,servicios,gbanco,fijos,interes,bancoInt,interesesFin,extra,res:ventas-cmv-reg-imp-mant-fijos-interes-bancoInt-interesesFin+extra};
+  return {ventas,cmv,varOtros:reg+imp+mant,sueldos,alquiler,servicios,fijos,interes,interesesFin,caucion,extra,res:ventas-cmv-reg-imp-mant-fijos-interes-interesesFin-caucion+extra};
 }
 function lagVal(s,m,onlyL,useReal,lag,key){
   lag=+lag;if(!isFinite(lag)||lag<0)lag=0;
@@ -407,7 +417,7 @@ function cajaSerie(s,onlyL,useReal,untilClosed){
     const pagoCMV=lagVal(s,m,onlyL,useReal,state.lagProv/30,'cmv');
     const pagoVar=lagVal(s,m,onlyL,useReal,state.lagImp/30,'varOtros');
     const vtoInv=(state.deuda.invCap[m]+state.deuda.invInt[m])*state.fx[s];
-    const deuda=state.deuda.fisco[m]+(+(state.deuda.bancoCap&&state.deuda.bancoCap[m])||0)+(+(state.deuda.bancoInt&&state.deuda.bancoInt[m])||0)+vtoInv;
+    const deuda=state.deuda.fisco[m]+state.deuda.banco[m]+vtoInv;
     const flujo=cobr-pagoCMV-pagoVar-e.fijos-deuda;
     acum+=flujo;out.push({flujo,acum,vtoInv,ventas:e.ventas});
   }
@@ -455,14 +465,14 @@ function buildCosts(){
   const vr=[['cmv','CMV'],['reg','Regalías'],['imp','Impuestos'],['mant','Mantenimiento']];
   document.getElementById('costVar').innerHTML='<table><thead><tr><th class="l">Variable · % de ventas</th><th>Warcalde</th><th>Güemes</th><th>Capke</th></tr></thead><tbody>'+
     vr.map(function(r){return '<tr><td class="l">'+r[1]+'</td>'+LOCALS.map(L=>'<td>'+inp('costos.'+L+'.'+r[0],{dec:1})+'</td>').join('')+'</tr>';}).join('')+'</tbody></table>';
-  const fr=[['sueldos','Sueldos / CS'],['aguinaldo','· del cual aguinaldo'],['alquiler','Alquiler'],['servicios','Servicios'],['gastosBanco','Gastos bancarios']];
+  const fr=[['sueldos','Sueldos / CS'],['aguinaldo','· del cual aguinaldo'],['alquiler','Alquiler'],['servicios','Servicios']];
   let fh='<table><thead><tr><th class="l">Fijo · $ por mes</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th></tr></thead><tbody>';
   LOCALS.forEach(function(L){fr.forEach(function(r){var ag=r[0]==='aguinaldo';fh+='<tr'+(ag?' style="color:var(--soft);font-size:11.5px"':'')+'><td class="l">'+L+' · '+r[1]+'</td>'+MESES.map(function(_,m){var p=ag?('aguinaldo.'+L+'.'+m):('costos.'+L+'.'+r[0]+'.'+m);return '<td>'+inp(p,{dec:0})+'</td>';}).join('')+'</tr>';});});
   fh+='</tbody></table>';
   document.getElementById('costFix').innerHTML=fh;
 }
 function buildDebt(){
-  const rows=[['fisco','Fisco ($)','M'],['bancoCap','Banco capital ($)','M'],['bancoInt','Banco interés ($)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
+  const rows=[['fisco','Fisco ($)','M'],['banco','Banco ($)','M'],['invCap','Inversores capital (USD)','U'],['invInt','Inversores interés (USD)','U']];
   document.getElementById('debtBody').innerHTML=rows.map(function(r){
     const k=r[0],lbl=r[1],u=r[2];
     return '<tr><td class="l">'+lbl+'</td>'+MESES.map((_,m)=>'<td>'+inp('deuda.'+k+'.'+m,{dec:0})+'</td>').join('')+'</tr>';
@@ -483,7 +493,7 @@ function renderBreakeven(){
   LOCALS.forEach(function(L){
     var c=state.costos[L],mv=mvPct(L);
     var ag=(state.aguinaldo&&state.aguinaldo[L])?(+state.aguinaldo[L][rm]||0):0;
-    var fijosRec=(c.sueldos[rm]-ag)+c.alquiler[rm]+c.servicios[rm]+(c.gastosBanco?(+c.gastosBanco[rm]||0):0);
+    var fijosRec=(c.sueldos[rm]-ag)+c.alquiler[rm]+c.servicios[rm];
     var be=mv>0?fijosRec/mv:0;
     var cubR=(state.real[L].cub[rm]>0)?state.real[L].fact[rm]/state.real[L].cub[rm]:cubAjust(L,rm);
     var beCub=cubR>0?be/cubR:0;
@@ -538,6 +548,7 @@ function computeCash(unit){unit=unit||'cons';ensureCash();var w=cashWeeks();var 
   (state.cash.recurrentes||[]).forEach(function(r){if(!matchU(r,unit))return;var arr=Array(13).fill(0);recPlace(r,w).forEach(function(wi){arr[wi]+=(+r.monto||0);});arr.forEach(function(v,i){egTot[i]+=v;});egRows.push({r:r,arr:arr});});
   var finRows=[],finCuota=Array(13).fill(0),finInt=Array(13).fill(0),finCap=Array(13).fill(0);
   (state.cash.financiaciones||[]).forEach(function(f){if(!matchU(f,unit))return;var fp=finPlace(f,w);var arr=Array(13).fill(0);fp.place.forEach(function(p){arr[p.wi]+=p.r.cuota;finCuota[p.wi]+=p.r.cuota;finInt[p.wi]+=p.r.interes;finCap[p.wi]+=p.r.capital;});finRows.push({f:f,arr:arr,am:fp.am,place:fp.place});});
+  if(unit==='cons'&&typeof caucSemanal==='function'){var _cauc=caucSemanal();for(var _ci=0;_ci<13;_ci++){ing[_ci]+=_cauc.ingCap[_ci];egTot[_ci]+=_cauc.egPre[_ci];}}
   var defAdj=Array(13).fill(0);(state.cash.diferimientos||[]).forEach(function(d){if(!matchU(d,unit))return;var de=Math.round(+d.de||0)-1,aa=Math.round(+d.a||0)-1,mo=+d.monto||0;if(de>=0&&de<13)defAdj[de]-=mo;if(aa>=0&&aa<13)defAdj[aa]+=mo;});var egEstArr=Array(13).fill(0),egRealArr=Array(13).fill(0),egEntered=Array(13).fill(false),egAjuste=Array(13).fill(0);var _eu=state.cash.egRealU||{};for(var _i2=0;_i2<13;_i2++){egEstArr[_i2]=egTot[_i2]+finCuota[_i2];var _ent,_rv;if(unit==='cons'){_ent=true;_rv=0;LOCALS.forEach(function(L){var v=_eu[L]&&_eu[L][_i2];if(v==null||v===''){_ent=false;}else{_rv+=(+v||0);}});}else{var v=_eu[unit]&&_eu[unit][_i2];_ent=(v!=null&&v!=='');_rv=(+v||0);}egEntered[_i2]=_ent;egRealArr[_i2]=_rv;}var flujo=[],acum=[],a=caIni(unit);for(var i=0;i<13;i++){var useR=(i<_cer)&&egEntered[i];var egF=useR?egRealArr[i]:egEstArr[i];var dA=(i<_cer)?0:defAdj[i];if(useR)egAjuste[i]=egEstArr[i]-egRealArr[i];var fl=ing[i]-egF-dA;flujo.push(fl);a+=fl;acum.push(a);}
   var fn=-1;for(var i=0;i<13;i++){if(acum[i]<0){fn=i;break;}}var piso=Math.min.apply(null,acum),pisoIdx=acum.indexOf(piso);
   return {w:w,unit:unit,ing:ing,estC:estC,realC:realC,cerradas:_cer,egRows:egRows,egTot:egTot,finRows:finRows,finCuota:finCuota,finInt:finInt,finCap:finCap,defAdj:defAdj,egEstArr:egEstArr,egRealArr:egRealArr,egEntered:egEntered,egAjuste:egAjuste,flujo:flujo,acum:acum,fn:fn,piso:piso,pisoIdx:pisoIdx,caIni:caIni(unit)};}
@@ -626,7 +637,7 @@ h+='<button class="delx" data-del="fin|'+fi+'">Quitar</button></div></div>';});
 h+='<button class="cashbtn" data-add="fin">+ financiación</button>';}
 h+='<div class="sct" data-fold="dif" style="cursor:pointer;margin-top:18px"><span style="display:inline-block;width:12px;color:var(--gold)">'+(cashFold['dif']?'\u25b8':'\u25be')+'</span>Reprogramaci\u00f3n de pagos \u00b7 pasar un gasto a otra semana</div>';if(!cashFold['dif']){
 (state.cash.diferimientos||[]).forEach(function(d,di){h+='<div class="finbox"><div class="row" style="gap:12px;flex-wrap:wrap;align-items:flex-end">';
-var _curT=d.fromTipo||(d.fromRec!=null?'rec':'');var _ro='<option value="">\u2014 traer de un egreso \u2014</option>';_ro+='<optgroup label="Egresos recurrentes">'+(state.cash.recurrentes||[]).map(function(r,k){return '<option value="rec|'+k+'"'+((_curT==='rec'&&k===d.fromRec)?' selected':'')+'>'+esc((r.concepto||'')+' \u00b7 '+(r.unidad||'')+' \u00b7 $'+fmtAR((+r.monto||0)/1e6,1)+'M')+'</option>';}).join('')+'</optgroup>';_ro+='<optgroup label="Financiaciones (cuota)">'+(state.cash.financiaciones||[]).map(function(f,k){var _cu=amortiza(f).cuota;return '<option value="fin|'+k+'"'+((_curT==='fin'&&k===d.fromRec)?' selected':'')+'>'+esc((f.concepto||'')+' \u00b7 '+(f.unidad||'')+' \u00b7 cuota $'+fmtAR(_cu/1e6,1)+'M')+'</option>';}).join('')+'</optgroup>';h+='<div><label class="f">Traer de</label><select class="mini" data-fillrec="'+di+'">'+_ro+'</select></div>';
+var _ro='<option value="">\u2014 traer de un recurrente \u2014</option>'+(state.cash.recurrentes||[]).map(function(r,k){return '<option value="'+k+'"'+(k===d.fromRec?' selected':'')+'>'+esc((r.concepto||'')+' \u00b7 '+(r.unidad||'')+' \u00b7 $'+fmtAR((+r.monto||0)/1e6,1)+'M')+'</option>';}).join('');h+='<div><label class="f">Traer de</label><select class="mini" data-fillrec="'+di+'">'+_ro+'</select></div>';
 h+='<div><label class="f">Concepto</label><input type="text" data-tpath="cash.diferimientos.'+di+'.concepto" value="'+esc(d.concepto||'')+'" style="text-align:left;width:160px"></div>';
 h+='<div><label class="f">Unidad</label>'+selOpts('cash.diferimientos.'+di+'.unidad',d.unidad,LOCALS)+'</div>';
 h+='<div><label class="f">Monto $</label>'+inpW('cash.diferimientos.'+di+'.monto')+'</div>';
@@ -641,7 +652,7 @@ root.querySelectorAll('input[data-dpath]').forEach(function(el){el.disabled=!edi
 root.querySelectorAll('select[data-mpath]').forEach(function(el){el.disabled=!editable;if(el._bm)return;el._bm=1;el.addEventListener('change',function(){sp(el.dataset.mpath,el.value);refreshCash();});});
 root.querySelectorAll('[data-add]').forEach(function(b){b.disabled=!editable;if(b._ba)return;b._ba=1;b.onclick=function(){if(!editable){alert('Activá "Editar" primero');return;}addCash(b.dataset.add);};});
 root.querySelectorAll('[data-del]').forEach(function(b){b.disabled=!editable;if(b._bx)return;b._bx=1;b.onclick=function(){if(!editable){alert('Activá "Editar" primero');return;}delCash(b.dataset.del);};});
-root.querySelectorAll('[data-fold]').forEach(function(el){if(el._bf)return;el._bf=1;el.onclick=function(){var k=el.getAttribute('data-fold');cashFold[k]=!cashFold[k];refreshCash();};});root.querySelectorAll('[data-fillrec]').forEach(function(el){el.disabled=!editable;if(el._bfr)return;el._bfr=1;el.onchange=function(){var di=+el.getAttribute('data-fillrec');var val=el.value;var d=state.cash.diferimientos[di];if(!d||val===''){return;}var _p=val.split('|'),_t=_p.length>1?_p[0]:'rec',_k=+_p[_p.length-1];var src=null,monto=0;if(_t==='rec'){src=(state.cash.recurrentes||[])[_k];monto=src?(+src.monto||0):0;}else if(_t==='fin'){src=(state.cash.financiaciones||[])[_k];monto=src?amortiza(src).cuota:0;}if(src){d.fromTipo=_t;d.fromRec=_k;d.concepto=src.concepto;d.unidad=src.unidad;d.monto=monto;}refreshCash();};});}
+root.querySelectorAll('[data-fold]').forEach(function(el){if(el._bf)return;el._bf=1;el.onclick=function(){var k=el.getAttribute('data-fold');cashFold[k]=!cashFold[k];refreshCash();};});root.querySelectorAll('[data-fillrec]').forEach(function(el){el.disabled=!editable;if(el._bfr)return;el._bfr=1;el.onchange=function(){var di=+el.getAttribute('data-fillrec');var ri=el.value;if(ri===''){return;}ri=+ri;var r=(state.cash.recurrentes||[])[ri];if(r&&state.cash.diferimientos[di]){var d=state.cash.diferimientos[di];d.fromRec=ri;d.concepto=r.concepto;d.unidad=r.unidad;d.monto=+r.monto||0;}refreshCash();};});}
 function addCash(t){var cs=state.cash,U=LOCALS[0];if(t==='ing')cs.ingresos.push({nombre:'Cobranzas',unidad:U,est:Array(13).fill(0),real:Array(13).fill(0)});else if(t==='rec')cs.recurrentes.push({concepto:'Otros',unidad:U,monto:0,modo:'mensual',dia:1});else if(t==='fin')cs.financiaciones.push({concepto:'Nueva financiación',unidad:U,capital:0,tasa:0,n:6,modo:'mensual',dia:1});else if(t==='dif')cs.diferimientos.push({concepto:'Pago diferido',unidad:U,monto:0,de:1,a:2});refreshCash();}
 function delCash(tok){var p=tok.split('|'),t=p[0],i=+p[1],cs=state.cash;if(t==='ing')cs.ingresos.splice(i,1);else if(t==='rec')cs.recurrentes.splice(i,1);else if(t==='fin')cs.financiaciones.splice(i,1);else if(t==='dif')cs.diferimientos.splice(i,1);refreshCash();}
 function refreshCash(){buildCash();var ed=document.getElementById('cashEdit');bindInputs(ed);bindCash(ed);renderCashOut();guardarNube();}
@@ -667,7 +678,7 @@ function renderOutputs(){
   const faltas=serie.map((x,m)=>({x,m})).filter(o=>o.x.vtoInv>0&&o.x.acum<0).map(o=>MESES[o.m]);
   document.getElementById('integralNote').textContent=faltas.length?('En este escenario no llegás al vencimiento de '+faltas.join(', ')+'. Ahí tenés que renegociar plazo o quita, o conseguir fondeo antes.'):'En este escenario cubrís todos los vencimientos con inversores. Mirá igual el piso de caja: si queda muy fino, un imprevisto te complica.';
 
-  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Gastos bancarios','gbanco',-1],['− Intereses inversores','interes',-1],['− Intereses banco','bancoInt',-1],['− Intereses financiaciones','interesesFin',-1]];
+  const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Intereses inversores','interes',-1],['− Intereses financiaciones','interesesFin',-1],['− Caución bursátil','caucion',-1]];
   let eb='';
   eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,false)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
   (state.extraPL||[]).forEach(function(e){if(!e)return;if(onlyL&&e.unidad!==onlyL)return;var has=(e.vals||[]).some(function(v){return +v;});if(!e.nombre&&!has)return;var sg=(e.signo===1?1:-1);var sem=0;var cells=MESES.map(function(_,m){var val=sg*(+(e.vals&&e.vals[m])||0);sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');var lbl=(sg<0?'\u2212 ':'+ ')+esc(e.nombre||'concepto')+((!onlyL&&e.unidad)?(' \u00b7 '+esc(e.unidad)):'');eb+='<tr><td class="l">'+lbl+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
@@ -736,7 +747,7 @@ function corteData(m,onlyL){
     var promReal=c15>0?f15/c15:0,promAjust=cubAjust(L,m);
     real15+=f15;cmv15+=cm15;esp15+=esp;cierreV+=cV;cierreCMV+=cV*ratio;
     regimp+=cV*(c.reg+c.imp+c.mant)/100;
-    fijos+=c.sueldos[m]+c.alquiler[m]+c.servicios[m]+(c.gastosBanco?(+c.gastosBanco[m]||0):0);
+    fijos+=c.sueldos[m]+c.alquiler[m]+c.servicios[m];
     sumCub15+=c15;sumAjustW+=promAjust*c15;
     per.push({L:L,f15:f15,esp:esp,ritmo:esp>0?f15/esp:0,cierre:cV,cub15:c15,promReal:promReal,promAjust:promAjust});
   });
@@ -1005,14 +1016,12 @@ function normalizar(){
     });
   }}catch(e){}
   try{if(!state._inflReal2026&&Array.isArray(state.histInfl)){var _ir=[32.38,33.02,32.64,32.38,33.2];for(var _k=0;_k<5;_k++)state.histInfl[_k]=_ir[_k];state._inflReal2026=true;}}catch(e){}
-  try{if(state.deuda){if(!Array.isArray(state.deuda.bancoCap))state.deuda.bancoCap=[0,0,0,0,0,0];if(!Array.isArray(state.deuda.bancoInt))state.deuda.bancoInt=[0,0,0,0,0,0];delete state.deuda.banco;}}catch(e){}
   LOCALS.forEach(function(L){
     if(!state.costos||!state.costos[L])return;
     ['sueldos','alquiler','servicios'].forEach(function(k){
       var v=state.costos[L][k];
       if(!Array.isArray(v)){state.costos[L][k]=[v,v,v,v,v,v];}
     });
-    if(!Array.isArray(state.costos[L].gastosBanco))state.costos[L].gastosBanco=[0,0,0,0,0,0];
   });
   if(state.lagUnit!=='dias'){
     state.lagCobro=Math.round((+state.lagCobro||0)*30);
@@ -1031,7 +1040,6 @@ function normalizar(){
   LOCALS.forEach(function(L){if(!Array.isArray(state.aguinaldo[L]))state.aguinaldo[L]=[0,0,0,0,0,0];});
   if(!state.cmvHist)state.cmvHist={};if(!state.cmvReal)state.cmvReal={};
   LOCALS.forEach(function(L){var base=(state.costos&&state.costos[L]?+state.costos[L].cmv:0)||0;if(!Array.isArray(state.cmvHist[L])||state.cmvHist[L].length!==18)state.cmvHist[L]=Array(18).fill(base);if(!Array.isArray(state.cmvReal[L])||state.cmvReal[L].length!==6)state.cmvReal[L]=Array(6).fill(base);});
-  try{if(!state._cmvCapke2025&&state.cmvHist&&Array.isArray(state.cmvHist['Capke'])){var _h25=[31.26,32.36,32.43,32.48,32.58,31.22,35.41,30.27,33.97,35.85,30.84,33.45];var _h26=[30.29,31.67,35.10,35.21,31.94];for(var _ci=0;_ci<12;_ci++)state.cmvHist['Capke'][_ci]=_h25[_ci];for(var _cj=0;_cj<5;_cj++)state.cmvHist['Capke'][12+_cj]=_h26[_cj];state.cmvHist['Capke'][17]=0;state._cmvCapke2025=true;}}catch(e){}
   if(!state.cash)state.cash={};
   var _cs=state.cash;
   if(!_cs.cajaIniU){
@@ -1078,12 +1086,219 @@ function normalizar(){
   if(!Array.isArray(_cs.diferimientos))_cs.diferimientos=[];
   _cs.diferimientos.forEach(function(d){if(!d.unidad)d.unidad='Warcalde';});
 }
+/* ===================== MÓDULO PALANCAS (Plan a diciembre) ===================== */
+var _plSim={};
+function PL(){return state.plan[state.plan.local];}
+function plCmvHoy(L){return (state.costos&&state.costos[L]?+state.costos[L].cmv:0)||0;}
+function plH25cmv(L){var a=state.cmvHist&&state.cmvHist[L];if(!Array.isArray(a))return[];return a.slice(6,12);}
+function plNum(x){return (x===''||x==null||isNaN(+x))?null:+x;}
+function plFmtPP(v){return (v>=0?'+':'−')+fmtAR(Math.abs(v),1)+' pp';}
+function plFmtPct(v){return (v>=0?'+':'−')+fmtAR(Math.abs(v),1)+'%';}
+function plFmtLvl(v){return fmtAR(v,1)+'%';}
+function plHoy(id){var P=PL();if(id==='cmv')return plCmvHoy(state.plan.local);return plNum(P.pal[id]&&P.pal[id].hoy);}
+function plAporte(id){var P=PL();if(id==='cub')return 0;var hoy=plHoy(id),meta=plNum(P.pal[id]&&P.pal[id].meta);if(hoy==null||meta==null)return 0;return Math.max(0,hoy-meta);}
+function plSum(){return ['cmv','suel','imp'].reduce(function(a,id){return a+plAporte(id);},0);}
+function plObjetivo(){var b=plNum(PL().base);return (b==null?0:b)+plSum();}
+// impacto
+function plNivelReal(id,mi){var P=PL();var r=P.real[id]&&P.real[id][mi];return plNum(r);}
+function plPPMes(mi){var s=0,hay=false;['cmv','suel','imp'].forEach(function(id){var hoy=plHoy(id),r=plNivelReal(id,mi);if(hoy!=null&&r!=null){s+=(hoy-r);hay=true;}});return hay?s:null;}
+function plPPsost(){var ms=[];for(var mi=0;mi<6;mi++){var v=plPPMes(mi);if(v!=null)ms.push(v);}return ms.length?ms.reduce(function(a,b){return a+b;},0)/ms.length:null;}
+function plPPpal(id){var hoy=plHoy(id),P=PL(),ms=[];for(var mi=0;mi<6;mi++){var r=plNum(P.real[id]&&P.real[id][mi]);if(hoy!=null&&r!=null)ms.push(hoy-r);}return ms.length?ms.reduce(function(a,b){return a+b;},0)/ms.length:null;}
+function plFact(mi){var f=PL().fact[mi];return plNum(f);}
+function plPesosMes(mi){var f=plFact(mi);if(f==null)return null;var s=0,hay=false;['cmv','suel','imp'].forEach(function(id){var hoy=plHoy(id),r=plNivelReal(id,mi);if(hoy!=null&&r!=null){s+=(hoy-r)/100*f;hay=true;}});return hay?s:null;}
+function plPesosAcum(){var s=0;for(var mi=0;mi<6;mi++){var v=plPesosMes(mi);if(v!=null)s+=v;}return s;}
+function plPesosPal(id){var hoy=plHoy(id),P=PL(),s=0;for(var mi=0;mi<6;mi++){var f=plFact(mi),r=plNum(P.real[id]&&P.real[id][mi]);if(f!=null&&hoy!=null&&r!=null)s+=(hoy-r)/100*f;}return s;}
+function plMesesPesos(){var n=0;for(var mi=0;mi<6;mi++){if(plPesosMes(mi)!=null)n++;}return n;}
+var PLROWS=[['cmv','CMV'],['suel','Sueldos'],['imp','Impuestos'],['cub','Cubierto real'],['neta','Rent. neta']];
+function renderPlan(){var host=document.getElementById('planWrap');if(!host)return;var P=PL();if(!P){host.innerHTML='';return;}
+  var ed=!!editable;var L=state.plan.local;
+  var IST="font-family:'IBM Plex Mono';font-size:13px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;text-align:right";
+  var H='';
+  // selector local
+  H+='<div class="row" style="margin-bottom:10px"><div class="tabs sm" id="planLocTabs">'+LOCALS.map(function(x){return '<button data-pl="'+esc(x)+'"'+(x===L?' class="on"':'')+'>'+esc(x)+'</button>';}).join('')+'</div><span class="note" style="margin-left:auto">Corte trimestral · Sep y Dic</span></div>';
+  H+='<p class="sub">Muestra tu impacto de gestión en las variables que mejoran la rentabilidad. Los puntos son tasa sostenida (por mes, no se suman); lo que se acumula es la plata. Se mide contra tu punto de partida (hoy), no contra 2025. '+(ed?'':'<b>Modo lectura.</b>')+'</p>';
+  // impacto
+  var pp=plPPsost(),plan=plSum(),pes=plPesosAcum(),nM=plMesesPesos();
+  H+='<div class="card" style="background:linear-gradient(135deg,#1B3A57,#16324B);border:0;margin:12px 0"><div class="sct" style="color:#F0E4C8">Mi impacto de gestión</div>'+
+    '<div class="kpis">'+
+    '<div class="kpi" style="background:rgba(255,255,255,.05);border-color:#2A4258"><div class="k" style="color:#9FB4CA">Mejora sostenida</div><div class="v" style="color:'+(pp==null?'#9AA7B4':(pp>=plan?'#4FB37E':'#EAF0F6'))+'">'+(pp==null?'—':plFmtPP(pp))+'</div><div class="d" style="color:#8DA2B8">por mes · meta '+plFmtPP(plan)+'</div></div>'+
+    '<div class="kpi" style="background:rgba(255,255,255,.05);border-color:#2A4258"><div class="k" style="color:#9FB4CA">Impacto monetario de la gestión</div><div class="v" style="font-size:30px;color:'+(nM===0?'#9AA7B4':(pes>0?'#4FB37E':(pes<0?'#E08a7d':'#EAF0F6')))+'">'+(nM===0?'—':fmtM(pes))+'</div><div class="d" style="color:#8DA2B8">'+(nM===0?'cargá real y facturación':('en '+nM+' '+(nM===1?'mes':'meses')+' · sobre facturación real'))+'</div></div>'+
+    '</div>';
+  var brk='';['cmv','suel','imp'].forEach(function(id){var dp=plPPpal(id);if(dp==null)return;brk+='<div class="kpi" style="background:rgba(255,255,255,.05);border-color:#2A4258"><div class="k" style="color:#C9D6E4">'+({cmv:'CMV',suel:'Sueldos',imp:'Impuestos'}[id])+'</div><div class="v" style="font-size:16px;color:#4FB37E">'+plFmtPP(dp)+'</div><div class="d" style="color:#B0842F">'+fmtM(plPesosPal(id))+'</div></div>';});
+  if(brk)H+='<div class="kpis" style="margin-top:10px">'+brk+'</div>';
+  H+='</div>';
+  // objetivo
+  var b=plNum(P.base),obj=plObjetivo();
+  H+='<div class="kpis" style="margin-bottom:14px"><div class="kpi"><div class="k">Rentabilidad neta hoy</div><div class="v '+(b!=null&&b<0?'neg':'pos')+'">'+(b==null?'—':plFmtPct(b))+'</div><div class="d">punto de partida <input class="plin" data-k="base" value="'+(b==null?'':(''+P.base).replace('.',','))+'" placeholder="cargar" style="width:60px;'+IST+'" '+(ed?'':'disabled')+'></div></div>'+
+    '<div class="kpi"><div class="k">Objetivo (derivado)</div><div class="v '+(obj>=0?'pos':'neg')+'">'+(b==null?'—':plFmtPct(obj))+'</div><div class="d">hoy + aportes</div></div>'+
+    '<div class="kpi"><div class="k">Aporte de gestión (plan)</div><div class="v">'+plFmtPP(plan)+'</div><div class="d">'+(plan>=3?'cumple piso +3pp':'bajo el piso +3pp')+'</div></div></div>';
+  // palancas
+  H+='<div class="sct">Palancas · cómo se construye cada punto</div><div class="scr"><table><thead><tr><th class="l">Palanca</th><th>Hoy</th><th>Meta</th><th class="l">Acción</th><th>Aporte</th></tr></thead><tbody>';
+  [['cmv','CMV','nivel'],['suel','Sueldos + cargas','nivel'],['cub','Cubierto real','def'],['imp','Impuestos','nivel']].forEach(function(row){var id=row[0];var pal=P.pal[id];
+    var hoyC,metaC,apC,tag;
+    if(row[2]==='nivel'){
+      var hoyEditable=(id!=='cmv'); // cmv hoy viene de costos
+      var hoyVal=plHoy(id);
+      hoyC=hoyEditable?('<input class="plin" data-k="pal.'+id+'.hoy" value="'+(pal.hoy===''||pal.hoy==null?'':(''+pal.hoy).replace('.',','))+'" style="width:52px;'+IST+'" '+(ed?'':'disabled')+'>%'):('<span class="mono">'+(hoyVal==null?'—':plFmtLvl(hoyVal))+'</span><div class="note" style="font-size:10px">de Costos</div>');
+      metaC='<input class="plin" data-k="pal.'+id+'.meta" value="'+(pal.meta===''||pal.meta==null?'':(''+pal.meta).replace('.',','))+'" style="width:52px;'+IST+'" '+(ed?'':'disabled')+'>%';
+      var a=plAporte(id);apC='<span class="mono '+(a>0?'pos':'note')+'" style="font-weight:600">'+(a>0?plFmtPP(a):'+0,0 pp')+'</span>';
+      tag=pal.tent?'<div class="note" style="color:var(--gold);font-size:10px">a validar · IIBB+Munic+cheque (IVA no)</div>':'';
+    }else{hoyC='<span class="note">100</span>';metaC='<span class="note">≥ infl.</span>';apC='<span class="note">protege · 0 pp</span>';tag='';}
+    H+='<tr><td class="l"><b>'+({cmv:'CMV',suel:'Sueldos + cargas',cub:'Cubierto real',imp:'Impuestos'}[id])+'</b>'+tag+'</td><td class="mono">'+hoyC+'</td><td class="mono">'+metaC+'</td>'+
+      '<td class="l"><input class="plin" data-k="pal.'+id+'.accion" value="'+esc(pal.accion||'')+'" style="width:100%;text-align:left;font-family:Inter;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:4px 6px" '+(ed?'':'disabled')+'></td><td class="mono">'+apC+'</td></tr>';});
+  H+='<tr class="fin"><td class="l">Total que suma</td><td></td><td></td><td class="l note">Cubierto protege · eventos aparte</td><td class="mono pos">'+plFmtPP(plSum())+'</td></tr></tbody></table></div>';
+  // grilla prometido vs logrado
+  var MES=['Jul','Ago','Sep','Oct','Nov','Dic'];
+  H+='<div class="sct" style="margin-top:16px">Prometido vs logrado · mes a mes</div><div class="scr"><table><thead><tr><th class="l">Indicador</th><th class="l"></th>'+MES.map(function(m){return '<th>'+m+'</th>';}).join('')+'</tr></thead><tbody>';
+  // fila facturación
+  H+='<tr><td class="l"><b>Facturación</b></td><td class="l note">$ M</td>'+MES.map(function(m,mi){return '<td><input class="plgrid" data-g="fact" data-m="'+mi+'" value="'+(P.fact[mi]==null||P.fact[mi]===''?'':fmtAR(+P.fact[mi]/1e6,1))+'" placeholder="—" style="width:52px;'+IST+';text-align:center" '+(ed?'':'disabled')+'></td>';}).join('')+'</tr>';
+  PLROWS.forEach(function(rw){var id=rw[0];var isNivel=(id==='cmv'||id==='suel'||id==='imp');var isCub=(id==='cub');
+    var planTxt=isCub?'mantener':(id==='neta'?(plNum(P.base)==null?'—':plFmtPct(plObjetivo())):(function(){var mt=plNum(P.pal[id]&&P.pal[id].meta);return mt==null?'—':plFmtLvl(mt);})());
+    var has25=!isCub;
+    // fila 2025 (menos cubierto)
+    if(has25){var pre=(id==='cmv')?plH25cmv(state.plan.local):null;
+      H+='<tr><td class="l metric" rowspan="3"><b>'+rw[1]+'</b></td><td class="l note" style="color:var(--gold)">2025</td>'+MES.map(function(m,mi){var v=(P.h25[id]&&P.h25[id][mi]);if((v==null||v==='')&&pre&&pre[mi]!=null)v=fmtAR(pre[mi],1);else v=(v==null||v===''?'':(''+v).replace('.',','));return '<td><input class="plgrid" data-g="h25:'+id+'" data-m="'+mi+'" value="'+v+'" placeholder="—" style="width:48px;'+IST+';text-align:center" '+(ed?'':'disabled')+'></td>';}).join('')+'</tr><tr><td class="l note">plan</td>'+MES.map(function(){return '<td class="mono" style="color:var(--frame);font-weight:600">'+planTxt+'</td>';}).join('')+'</tr>';
+    }else{H+='<tr><td class="l metric" rowspan="2"><b>'+rw[1]+'</b></td><td class="l note">plan</td>'+MES.map(function(){return '<td class="mono" style="color:var(--frame);font-weight:600">'+planTxt+'</td>';}).join('')+'</tr>';}
+    // fila real
+    H+='<tr><td class="l note">real</td>'+MES.map(function(m,mi){var rv=(P.real[id]&&P.real[id][mi]);rv=(rv==null||rv===''?'':(''+rv).replace('.',','));return '<td><input class="plgrid" data-g="real:'+id+'" data-m="'+mi+'" value="'+rv+'" placeholder="—" style="width:48px;'+IST+';text-align:center" '+(ed?'':'disabled')+'></td>';}).join('')+'</tr>';});
+  H+='</tbody></table></div>';
+  host.innerHTML=H;
+  // bindings
+  host.querySelectorAll('#planLocTabs button').forEach(function(b){b.onclick=function(){state.plan.local=b.dataset.pl;renderPlan();guardarNube();};});
+  host.querySelectorAll('.plin').forEach(function(inp){inp.addEventListener('change',function(){var k=inp.dataset.k,P=PL();
+    if(k==='base'){var v=plNum(inp.value.replace(',','.'));P.base=(v==null?'':v);}
+    else if(k.slice(-7)==='.accion'){var id=k.split('.')[1];P.pal[id].accion=inp.value;}
+    else{var parts=k.split('.');var v2=plNum(inp.value.replace(',','.'));P.pal[parts[1]][parts[2]]=(v2==null?'':v2);}
+    renderPlan();guardarNube();});});
+  host.querySelectorAll('.plgrid').forEach(function(inp){inp.addEventListener('change',function(){var g=inp.dataset.g,mi=+inp.dataset.m,P=PL();var v=plNum(inp.value.replace(',','.'));
+    if(g==='fact'){if(!Array.isArray(P.fact))P.fact=[];P.fact[mi]=(v==null?'':v*1e6);}
+    else{var parts=g.split(':'),store=parts[0]==='h25'?P.h25:P.real,id=parts[1];if(!Array.isArray(store[id]))store[id]=[];store[id][mi]=(v==null?'':v);}
+    renderPlan();guardarNube();});});}
+/* =================== FIN MÓDULO PALANCAS =================== */
+
+/* ===================== MÓDULO CAUCIÓN (Deuda) ===================== */
+var _caucP=null, _caucSim={monto:'',mes:2,tramo:'auto'};
+function caucInvalidate(){_caucP=null;}
+function caucParseN(s){var v=parseFloat((''+s).replace(/\./g,'').replace(',','.'));return isNaN(v)?null:v;}
+function caucParseD(s){var m=(''+s).match(/^(\d{1,2})\/(\d{1,2})$/);if(!m)return null;return new Date(2026,+m[2]-1,+m[1]);}
+function caucDstr(d){return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);}
+function caucFmtP(v,d){d=d==null?2:d;return fmtAR(v,d)+'%';}
+function caucCalc(r,prestM){var cc=state.caucion||{},AR=+cc.arancelM||0.33,DR=+cc.derM||0.00286,IVA=cc.iva==null?21:+cc.iva;
+  var cap=+r.capital||0,dias=+r.dias||0,tna=+r.tna||0;
+  var interes=cap*tna/100*dias/365,arancel=cap*AR/100*dias/30,ivaAr=arancel*IVA/100,der=cap*DR/100*dias/30,ivaDer=der*IVA/100;
+  var gastos=arancel+ivaAr+der+ivaDer,neto=cap+interes+gastos,prest=cap*(+prestM||0)/100*dias/30;
+  var directo=cap>0?(neto-cap)/cap*100:0,tnaNeta=dias>0?directo/dias*365:0;
+  return{interes:interes,arancel:arancel,ivaAr:ivaAr,der:der,ivaDer:ivaDer,gastos:gastos,neto:neto,prest:prest,directo:directo,tnaNeta:tnaNeta};}
+function _caucProyectar(cancel){var FIN=new Date(2026,11,31),meses=[6,7,8,9,10,11];
+  var stockFin=[0,0,0,0,0,0],cI=[0,0,0,0,0,0],cG=[0,0,0,0,0,0],cP=[0,0,0,0,0,0];
+  var cc=state.caucion;if(!cc||!Array.isArray(cc.tramos))return{stockFin:stockFin,costoInt:cI,costoGas:cG,costoPre:cP,noAplicado:0};
+  var restante=cancel?(+cancel.monto||0):0,cDate=cancel?new Date(2026,6+(+cancel.mes||0),1):null;
+  var lista=cc.tramos;
+  if(cancel){var prio=cancel.tramo==='auto'?['C','B','A']:[cancel.tramo];lista=cc.tramos.slice().sort(function(a,b){var pa=prio.indexOf(a.id),pb=prio.indexOf(b.id);return (pa<0?99:pa)-(pb<0?99:pb);});}
+  lista.forEach(function(tr){var rs=tr.renos||[];if(!rs.length)return;var last=rs[rs.length-1];var ini0=caucParseD(last.fecha);if(!ini0)return;if(!(+last.capital>0)||!(+last.dias>0))return;
+    var aplicable=!cancel||cancel.tramo==='auto'||cancel.tramo===tr.id;
+    var cur={ini:new Date(ini0),dias:+last.dias,capital:+last.capital,tna:+last.tna||0},freq=+tr.freq||28,guard=0;
+    while(true){var fin=new Date(cur.ini);fin.setDate(fin.getDate()+cur.dias);var c=caucCalc(cur,tr.prest);
+      var mi=meses.indexOf(fin.getMonth()),mi2=(fin.getFullYear()===2026&&mi>=0)?mi:(fin>FIN?5:-1);
+      if(mi2>=0){cI[mi2]+=c.interes;cG[mi2]+=c.gastos;cP[mi2]+=c.prest;}
+      meses.forEach(function(mm,k){var eom=new Date(2026,mm+1,0);if(cur.ini<=eom&&fin>eom)stockFin[k]+=cur.capital;});
+      if(fin>=FIN||guard++>60)break;var nextCap=c.neto;
+      if(aplicable&&cDate&&restante>0&&fin>=cDate){var take=Math.min(restante,nextCap);nextCap-=take;restante-=take;}
+      if(nextCap<=0)break;cur={ini:fin,dias:freq,capital:nextCap,tna:cur.tna};}});
+  return{stockFin:stockFin,costoInt:cI,costoGas:cG,costoPre:cP,noAplicado:restante};}
+function caucGetProj(cancel){if(!cancel&&_caucP)return _caucP;var r=_caucProyectar(cancel);if(!cancel)_caucP=r;return r;}
+function caucMesTot(m){var p=caucGetProj(null);return (p.costoInt[m]||0)+(p.costoGas[m]||0)+(p.costoPre[m]||0);}
+function caucSemanal(){var ing=Array(13).fill(0),eg=Array(13).fill(0),cc=state.caucion;if(!cc||!Array.isArray(cc.tramos))return{ingCap:ing,egPre:eg};
+  var w=cashWeeks();cc.tramos.forEach(function(tr){var rs=tr.renos||[];if(!rs.length)return;var r0=rs[0],d0=caucParseD(r0.fecha);
+    if(d0&&+r0.capital>0){var wi=wkIdx(w,d0);if(wi>=0&&wi<13)ing[wi]+=(+r0.capital);}
+    rs.forEach(function(r){var d=caucParseD(r.fecha);if(!d)return;var wi=wkIdx(w,d);if(wi<0||wi>=13)return;var pm=+tr.prest||0,dias=+r.dias||0,cap=+r.capital||0;if(pm>0&&cap>0&&dias>0)eg[wi]+=cap*pm/100*dias/30;});});
+  return{ingCap:ing,egPre:eg};}
+function caucProjSvg(p){var cap0=(state.caucion.tramos||[]).reduce(function(a,t){var r=t.renos&&t.renos[0];return a+(r&&+r.capital>0?+r.capital:0);},0);
+  var vals=p.stockFin;if(cap0<=0&&Math.max.apply(null,vals)<=0)return '<p class="note" style="margin-top:10px">Cargá capital, días y TNA en algún tramo para ver la proyección.</p>';
+  var MES=['Jul','Ago','Sep','Oct','Nov','Dic'],W=760,H=190,padL=56,padR=14,padT=14,padB=26;
+  var lo=Math.min.apply(null,[cap0].concat(vals))*0.98,hi=Math.max.apply(null,vals.concat([cap0]))*1.02;
+  var x=function(i){return padL+(W-padL-padR)*(i/5);},y=function(v){return padT+(H-padT-padB)*(1-(v-lo)/((hi-lo)||1));};
+  var sim=_caucSim.monto&&caucParseN(_caucSim.monto)>0?caucGetProj({monto:caucParseN(_caucSim.monto)*1e6,mes:+_caucSim.mes,tramo:_caucSim.tramo}):null;
+  var s='<line x1="'+padL+'" y1="'+y(cap0).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y(cap0).toFixed(1)+'" stroke="#B0842F" stroke-dasharray="4 4" stroke-width="1.5"/>';
+  s+='<text x="'+(padL-6)+'" y="'+(y(cap0)+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#B0842F" font-family="IBM Plex Mono">'+fmtM(cap0)+'</text>';
+  var path='';vals.forEach(function(v,i){path+=(i?' L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);});
+  s+='<path d="'+path+'" fill="none" stroke="#2E5CA0" stroke-width="2.5"/>';
+  if(sim){var sp='';sim.stockFin.forEach(function(v,i){sp+=(i?' L':'M')+x(i).toFixed(1)+' '+Math.min(y(v),H-padB).toFixed(1);});s+='<path d="'+sp+'" fill="none" stroke="#1E8A5B" stroke-width="2" stroke-dasharray="5 4"/>';}
+  vals.forEach(function(v,i){s+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="3.5" fill="#2E5CA0"/>';
+    s+='<text x="'+x(i).toFixed(1)+'" y="'+(y(v)-8).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-weight="600" fill="#1B3A57" font-family="IBM Plex Mono">'+(v/1e6).toFixed(1).replace('.',',')+'</text>';
+    s+='<text x="'+x(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9.5" fill="#7A8794" font-family="Inter">'+MES[i]+'</text>';});
+  return '<div class="sct" style="margin-top:18px">Proyección del stock · renovando a última tasa conocida</div><svg viewBox="0 0 760 190" width="100%">'+s+'</svg>';}
+function caucMensualTable(p){var MES=['Jul','Ago','Sep','Oct','Nov','Dic'];
+  var row=function(lab,arr,neg){var tot=arr.reduce(function(a,b){return a+b;},0);return '<tr><td class="l">'+lab+'</td>'+arr.map(function(v){return '<td class="mono'+(neg&&v?' neg':'')+'">'+(v?fmtM(v):'—')+'</td>';}).join('')+'<td class="mono'+(neg&&tot?' neg':'')+'">'+fmtM(tot)+'</td></tr>';};
+  var h='<div class="scr" style="margin-top:12px"><table><thead><tr><th class="l">Mes</th>'+MES.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>Total</th></tr></thead><tbody>';
+  h+=row('Interés devengado',p.costoInt,true)+row('Gastos + IVA',p.costoGas,true)+row('Prestamista (caja)',p.costoPre,true);
+  h+='<tr class="fin"><td class="l">Stock fin de mes</td>'+p.stockFin.map(function(v){return '<td class="mono">'+fmtM(v)+'</td>';}).join('')+'<td></td></tr></tbody></table></div>';
+  return h;}
+function caucSimHTML(){var sel=function(id,opts,val){return '<select class="mini" data-sim="'+id+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]==(''+val)?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>';};
+  var meses=[['0','Jul'],['1','Ago'],['2','Sep'],['3','Oct'],['4','Nov'],['5','Dic']];
+  var tramos=[['auto','el más caro primero (C→B→A)'],['C','Tramo C'],['B','Tramo B'],['A','Tramo A']];
+  var h='<div class="sct" style="margin-top:18px">Simulador · ¿me conviene cancelar parte?</div>';
+  h+='<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><span class="note">Cancelo</span><input class="mini" data-sim="monto" value="'+esc(''+_caucSim.monto)+'" placeholder="—" style="width:70px;text-align:right;font-family:\'IBM Plex Mono\'"><span class="note">$M en la renovación de</span>'+sel('mes',meses,_caucSim.mes)+'<span class="note">contra</span>'+sel('tramo',tramos,_caucSim.tramo)+'</div>';
+  var mv=caucParseN(_caucSim.monto);
+  if(!mv||mv<=0){h+='<p class="note">Cargá un monto para simular. La cancelación se aplica en la primera renovación del mes elegido; el ahorro se mide contra la proyección base.</p>';return h;}
+  var base=caucGetProj(null),sim=caucGetProj({monto:mv*1e6,mes:+_caucSim.mes,tramo:_caucSim.tramo});
+  var cBase=0,cSim=0;for(var i=0;i<6;i++){cBase+=base.costoInt[i]+base.costoGas[i]+base.costoPre[i];cSim+=sim.costoInt[i]+sim.costoGas[i]+sim.costoPre[i];}
+  var ahorro=cBase-cSim,aplicado=mv*1e6-sim.noAplicado,diasRest=Math.max(1,Math.round((new Date(2026,11,31)-new Date(2026,6+ +_caucSim.mes,1))/86400000));
+  var tnaEq=aplicado>0?(ahorro/aplicado)*(365/diasRest)*100:0;
+  h+='<div class="kpis"><div class="kpi"><div class="k">Ahorro hasta 31/12</div><div class="v pos">'+fmtM(ahorro)+'</div><div class="d">interés+gastos+prest.</div></div>'+
+     '<div class="kpi"><div class="k">Stock 31/12</div><div class="v">'+fmtM(sim.stockFin[5])+'</div><div class="d">vs '+fmtM(base.stockFin[5])+' sin cancelar</div></div>'+
+     '<div class="kpi"><div class="k">Rinde de esa plata</div><div class="v">'+caucFmtP(tnaEq,1)+'</div><div class="d">TNA equiv. del ahorro</div></div></div>';
+  h+='<p class="note" style="margin-top:8px">'+(sim.noAplicado>0?('<b class="neg">'+fmtM(sim.noAplicado)+' no se aplicó: excede el stock disponible.</b> '):'')+'Si esa TNA equivalente le gana a lo que esa caja rinde en otro lado, cancelar conviene. El ahorro real es mayor: acá se corta al 31/12, pero sin cancelar el stock sigue capitalizando en 2027.</p>';
+  return h;}
+function renderDeuda(){var host=document.getElementById('deudaWrap');if(!host)return;var cc=state.caucion;
+  if(!cc||!Array.isArray(cc.tramos)){host.innerHTML='<p class="sub">Sin caución configurada.</p>';return;}
+  var ed=!!editable;caucInvalidate();var p=caucGetProj(null);
+  var IST="text-align:right;font-family:'IBM Plex Mono';font-size:12px;border:1px solid var(--line);border-radius:6px;padding:3px 5px";
+  var cap0=cc.tramos.reduce(function(a,t){var r=t.renos&&t.renos[0];return a+(r&&+r.capital>0?+r.capital:0);},0);
+  var stockHoy=cc.tramos.reduce(function(a,t){var r=t.renos&&t.renos[t.renos.length-1];return a+(r&&+r.capital>0?+r.capital:0);},0);
+  var costoTot=0,prestTot=0;for(var i=0;i<6;i++){costoTot+=p.costoInt[i]+p.costoGas[i];prestTot+=p.costoPre[i];}
+  var H='<p class="sub">La caución no cancela: renueva por capital + interés, así que el stock crece. El interés y los gastos van al estado de resultados como costo financiero; la entrada de capital va a la caja semanal (consolidado). '+(ed?'':'<b>Modo lectura: tocá "Editar" arriba para cargar datos.</b>')+'</p>';
+  H+='<div class="kpis" style="margin:12px 0 14px">'+
+    '<div class="kpi"><div class="k">Capital tomado</div><div class="v">'+fmtM(cap0)+'</div><div class="d">entra a caja</div></div>'+
+    '<div class="kpi"><div class="k">Stock vigente</div><div class="v">'+fmtM(stockHoy)+'</div><div class="d">última renovación</div></div>'+
+    '<div class="kpi"><div class="k">Stock 31/12 proyectado</div><div class="v '+(stockDic0(p)>cap0?'neg':'')+'">'+fmtM(p.stockFin[5])+'</div><div class="d">a última tasa</div></div>'+
+    '<div class="kpi"><div class="k">Costo fin. Jul–Dic</div><div class="v neg">'+fmtM(costoTot)+'</div><div class="d">al P&amp;L</div></div>'+
+    '<div class="kpi"><div class="k">Prestamista Jul–Dic</div><div class="v">'+fmtM(prestTot)+'</div><div class="d">por caja</div></div></div>';
+  cc.tramos.forEach(function(tr,ti){var totInt=0,totGas=0,totPre=0;
+    var rows=(tr.renos||[]).map(function(r,ri){var c=caucCalc(r,tr.prest);totInt+=c.interes;totGas+=c.gastos;totPre+=c.prest;
+      function ci(k,val,wd){return '<td><input class="caucin" data-t="'+ti+'" data-r="'+ri+'" data-k="'+k+'" value="'+val+'" style="width:'+(wd||64)+'px;'+IST+'" '+(ed?'':'disabled')+'></td>';}
+      return '<tr><td class="l">#'+(ri+1)+'</td>'+ci('fecha',esc(r.fecha||''),50)+ci('dias',(r.dias===''||r.dias==null?'':r.dias),40)+
+        ci('capital',(r.capital===''||r.capital==null?'':fmtAR(+r.capital,0)),92)+ci('tna',(r.tna===''||r.tna==null?'':(''+r.tna).replace('.',',')),50)+
+        '<td class="mono">'+fmtAR(c.interes,0)+'</td><td class="mono">'+fmtAR(c.arancel+c.ivaAr,0)+'</td><td class="mono">'+fmtAR(c.der+c.ivaDer,0)+'</td>'+
+        (+tr.prest>0?'<td class="mono">'+fmtAR(c.prest,0)+'</td>':'<td class="mono note">—</td>')+
+        '<td class="mono" style="font-weight:600">'+fmtAR(c.neto,0)+'</td><td class="mono">'+caucFmtP(c.tnaNeta,1)+'</td><td class="mono">'+caucFmtP(c.directo,2)+'</td></tr>';}).join('');
+    var tag=+tr.prest>0?('títulos alquilados · +'+caucFmtP(tr.prest,2)+' mensual'):'garantía a definir';
+    H+='<div class="sct" style="margin-top:14px">'+esc(tr.nombre)+' · <span class="note" style="font-weight:400">'+tag+'</span></div>';
+    H+='<div class="row" style="margin-bottom:6px;gap:6px;align-items:center"><span class="note">Renovación cada</span><input class="caucin" data-t="'+ti+'" data-k="freq" value="'+(tr.freq===''||tr.freq==null?'':tr.freq)+'" style="width:44px;'+IST+'" '+(ed?'':'disabled')+'><span class="note">días · prestamista</span><input class="caucin" data-t="'+ti+'" data-k="prest" value="'+(tr.prest===''||tr.prest==null?'':(''+tr.prest).replace('.',','))+'" style="width:48px;'+IST+'" '+(ed?'':'disabled')+'><span class="note">% mensual</span></div>';
+    H+='<div class="scr"><table><thead><tr><th class="l"></th><th>Fecha</th><th>Días</th><th>Capital</th><th>TNA%</th><th>Interés</th><th>Aranc+IVA</th><th>Der+IVA</th><th>Prest.</th><th>Neto→próx.</th><th>TNA neta</th><th>Directo</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    if(ed)H+='<button class="cashbtn" data-add="'+ti+'">+ renovación (capital = neto anterior)</button>';
+    H+='<p class="note" style="margin-top:4px">Interés '+fmtAR(totInt,0)+' · gastos+IVA '+fmtAR(totGas,0)+(+tr.prest>0?(' · prestamista '+fmtAR(totPre,0)):'')+'</p>';});
+  H+=caucProjSvg(p)+caucMensualTable(p)+caucSimHTML();
+  host.innerHTML=H;
+  host.querySelectorAll('.caucin').forEach(function(inp){inp.addEventListener('change',function(){var t=+inp.dataset.t,k=inp.dataset.k,tr=state.caucion.tramos[t];
+    if(inp.dataset.r!=null&&inp.dataset.r!==''){var r=tr.renos[+inp.dataset.r];if(k==='fecha'){if(caucParseD(inp.value))r.fecha=inp.value;}else{var v=caucParseN(inp.value);r[k]=(v==null?'':v);}}
+    else{var v2=caucParseN(inp.value);tr[k]=(v2==null?'':v2);}
+    caucInvalidate();renderDeuda();renderOutputs();guardarNube();});});
+  if(ed)host.querySelectorAll('button[data-add]').forEach(function(b){b.addEventListener('click',function(){var t=+b.dataset.add,tr=state.caucion.tramos[t],last=tr.renos[tr.renos.length-1],c=caucCalc(last,tr.prest);
+    var step=(+last.dias||+tr.freq||28),d=caucParseD(last.fecha)||new Date(2026,6,1);d.setDate(d.getDate()+step);
+    tr.renos.push({fecha:caucDstr(d),dias:(tr.freq||''),capital:(c.neto>0?Math.round(c.neto):''),tna:(last.tna||'')});
+    caucInvalidate();renderDeuda();renderOutputs();guardarNube();});});
+  host.querySelectorAll('[data-sim]').forEach(function(el){el.addEventListener('change',function(){_caucSim[el.dataset.sim]=el.value;renderDeuda();});
+    if(el.dataset.sim==='monto')el.addEventListener('input',function(){_caucSim.monto=el.value;});});}
+function stockDic0(p){return p.stockFin[5];}
+/* =================== FIN MÓDULO CAUCIÓN =================== */
+
 function render(){
   normalizar();
   document.querySelectorAll('#scenTabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===scen));
   document.getElementById('scenLbl').textContent=SLBL[scen];
   buildGlobals();buildInf();renderLocalTabs();buildLocalPanel();buildKnobs();buildCosts();buildDebt();buildCorte();buildDesvioView();buildCmvView();buildCmvEntry();buildExtraPL();buildHistTabs();buildHistEntry();
-  buildCash();bindInputs(document);bindCash(document);renderOutputs();setView(curView);
+  buildCash();bindInputs(document);bindCash(document);if(typeof caucInvalidate==='function')caucInvalidate();renderOutputs();if(typeof renderDeuda==='function')renderDeuda();if(typeof renderPlan==='function')renderPlan();setView(curView);
 }
 
 document.querySelectorAll('#vnav button').forEach(function(b){b.onclick=function(){setView(b.dataset.view);};});
@@ -1111,7 +1326,7 @@ function soltarLock(){if(!tengoLock)return;tengoLock=false;escribirLock(true);mi
 function iniciarLatido(){detenerLatido();latidoT=setInterval(function(){if(tengoLock&&editable)escribirLock(false);},45000);}
 function detenerLatido(){if(latidoT){clearInterval(latidoT);latidoT=null;}}
 function avisarLockPasivo(){leerLock(function(lk){if(lockActivo(lk)){var h=lk.since?(' desde '+new Date(lk.since).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})):'';setEstado((lk.user||'otro usuario')+' editando'+h,'pw');}});}
-function setEditable(b){editable=b;if(!b){soltarLock();detenerLatido();}buildExtraPL();bindInputs(document);document.querySelectorAll('input[data-path]').forEach(function(el){el.disabled=!b;});document.querySelectorAll('#cashEdit input,#cashEdit select,#cashEdit .cashbtn,#cashEdit .delx').forEach(function(el){el.disabled=!b;});var btn=document.getElementById('btnEditar');if(btn)btn.textContent=b?'Editando':'Editar';setEstado(b?'guardado':'modo lectura',b?'pg':'pf');updateUndoBtn();}
+function setEditable(b){editable=b;if(!b){soltarLock();detenerLatido();}buildExtraPL();bindInputs(document);document.querySelectorAll('input[data-path]').forEach(function(el){el.disabled=!b;});document.querySelectorAll('#cashEdit input,#cashEdit select,#cashEdit .cashbtn,#cashEdit .delx').forEach(function(el){el.disabled=!b;});var btn=document.getElementById('btnEditar');if(btn)btn.textContent=b?'Editando':'Editar';setEstado(b?'guardado':'modo lectura',b?'pg':'pf');updateUndoBtn();if(typeof renderDeuda==='function')renderDeuda();if(typeof renderPlan==='function')renderPlan();}
 var undoStack=[],UNDO_MAX=60;
 function snapState(){try{var s=JSON.stringify(state);if(undoStack.length&&undoStack[undoStack.length-1]===s)return;undoStack.push(s);if(undoStack.length>UNDO_MAX)undoStack.shift();updateUndoBtn();}catch(e){}}
 function updateUndoBtn(){var b=document.getElementById('btnUndo');if(b)b.disabled=(!editable||undoStack.length===0);}
@@ -1332,7 +1547,7 @@ function initColapsables(){
     e.addEventListener('click',function(){e.classList.toggle('col');box.classList.toggle('col');});
   });
 }
-var CLAVE_ACCESO='std69';
+var CLAVE_ACCESO='standard69';
 function unlock(){var ls=document.getElementById('lockScreen');if(ls)ls.style.display='none';if(!window.__booted){window.__booted=true;bootstrap();initColapsables();}}
 (function(){var b=document.getElementById('lockBtn'),p=document.getElementById('lockPass'),er=document.getElementById('lockErr');
  function tryUnlock(){if(p&&p.value===CLAVE_ACCESO){unlock();}else{if(er)er.style.display='block';if(p){p.value='';p.focus();}}}
