@@ -586,9 +586,10 @@ function repDetalle(wi,c){
   function li(x,dir){
     var w=cross(x);
     var arrow=dir==='in'?('S'+(x.de+1)+' \u2192 aquí'):('aquí \u2192 S'+(x.aa+1));
-    return '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0'+(w?';color:var(--red)':'')+'">'+
-      '<span>'+(w?'\u26a0 ':'')+esc(x.d.concepto||'(sin concepto)')+' <span class="note" style="'+(w?'color:var(--red)':'')+'">\u00b7 '+esc(x.d.unidad||'')+' \u00b7 '+arrow+'</span></span>'+
-      '<span class="mono" style="font-weight:600">'+(dir==='in'?'+':'\u2212')+fmtM(x.mo)+'</span></div>';
+    var col=w?'var(--red)':'inherit';
+    return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:3px 0;flex-wrap:wrap;color:'+col+'">'+
+      '<span class="mono" style="font-weight:700;min-width:66px;color:'+col+'">'+(dir==='in'?'+':'\u2212')+fmtM(x.mo)+'</span>'+
+      '<span style="flex:1;text-align:right">'+(w?'\u26a0 ':'')+esc(x.d.concepto||'(sin concepto)')+' <span class="note" style="'+(w?'color:var(--red)':'')+'">\u00b7 '+esc(x.d.unidad||'')+' \u00b7 '+arrow+'</span></span></div>';
   }
   var h='<div style="background:#FBFAF7;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:12px 14px;margin:4px 0 2px">';
   h+='<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--deep);margin-bottom:6px">Composición del ajuste \u00b7 '+wLabel(c.w[wi])+(wi<cer?' <span style="color:var(--red)">(semana cerrada)</span>':'')+'</div>';
