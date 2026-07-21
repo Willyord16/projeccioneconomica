@@ -1074,6 +1074,7 @@ function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildC
 const DEFAULTS=JSON.parse(JSON.stringify(state));
 function normalizar(){
   if(!Array.isArray(state.extraPL))state.extraPL=[];
+  try{if(state.plan){['Warcalde','Güemes','Capke'].forEach(function(L){var P=state.plan[L];if(P&&P.pal&&P.pal.cmv&&!('hoy' in P.pal.cmv))P.pal.cmv.hoy='';});}}catch(e){}
   if(state.deuda){
     if(!Array.isArray(state.deuda.bancoCap))state.deuda.bancoCap=Array.isArray(state.deuda.banco)?state.deuda.banco.slice():[0,0,0,0,0,0];
     if(!Array.isArray(state.deuda.bancoInt))state.deuda.bancoInt=[0,0,0,0,0,0];
@@ -1164,7 +1165,7 @@ function normalizar(){
 /* ===================== MÓDULO PALANCAS (Plan a diciembre) ===================== */
 var _plSim={};
 function PL(){return state.plan[state.plan.local];}
-function plCmvHoy(L){return (state.costos&&state.costos[L]?+state.costos[L].cmv:0)||0;}
+function plCmvHoy(L){var P=(state.plan&&state.plan[L])?state.plan[L]:null;var hv=P&&P.pal&&P.pal.cmv?P.pal.cmv.hoy:'';if(hv!==''&&hv!=null&&!isNaN(+hv))return +hv;return (state.costos&&state.costos[L]?+state.costos[L].cmv:0)||0;}
 function plH25cmv(L){var a=state.cmvHist&&state.cmvHist[L];if(!Array.isArray(a))return[];return a.slice(6,12);}
 function plNum(x){return (x===''||x==null||isNaN(+x))?null:+x;}
 function plFmtPP(v){return (v>=0?'+':'−')+fmtAR(Math.abs(v),1)+' pp';}
@@ -1212,7 +1213,7 @@ function renderPlan(){var host=document.getElementById('planWrap');if(!host)retu
   [['cmv','CMV','nivel'],['suel','Sueldos + cargas','nivel'],['cub','Cubierto real','def'],['imp','Impuestos','nivel']].forEach(function(row){var id=row[0];var pal=P.pal[id];
     var hoyC,metaC,apC,tag;
     if(row[2]==='nivel'){
-      var hoyEditable=(id!=='cmv'); // cmv hoy viene de costos
+      var hoyEditable=true; // cmv hoy editable, en pal.cmv.hoy
       var hoyVal=plHoy(id);
       hoyC=hoyEditable?('<input class="plin" data-k="pal.'+id+'.hoy" value="'+(pal.hoy===''||pal.hoy==null?'':(''+pal.hoy).replace('.',','))+'" style="width:52px;'+IST+'" '+(ed?'':'disabled')+'>%'):('<span class="mono">'+(hoyVal==null?'—':plFmtLvl(hoyVal))+'</span><div class="note" style="font-size:10px">de Costos</div>');
       metaC='<input class="plin" data-k="pal.'+id+'.meta" value="'+(pal.meta===''||pal.meta==null?'':(''+pal.meta).replace('.',','))+'" style="width:52px;'+IST+'" '+(ed?'':'disabled')+'>%';
