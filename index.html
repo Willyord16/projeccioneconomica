@@ -81,6 +81,37 @@
 .devfold .car{color:var(--gold);width:12px;display:inline-block}
 .devfold .pill{font-size:10.5px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--soft);background:#EFEFEA;border-radius:999px;padding:1px 8px}
 .devpanel table{background:#FFF}
+
+/* === Estimado vs real · rediseño === */
+.dvTbl{width:100%;border-collapse:separate;border-spacing:0}
+.dvTbl th{position:sticky;top:0;background:#fff;z-index:2;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#4A5763;font-weight:700;padding:7px 10px;text-align:right;border-bottom:1.5px solid #D9DFE6;white-space:nowrap}
+.dvTbl th.l{text-align:left}
+.dvTbl td{padding:9px 10px;border-bottom:1px solid #EDF0F3;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;color:#16212B;white-space:nowrap}
+.dvTbl td.l{text-align:left;font-family:'Inter',sans-serif;font-weight:500}
+.dvTbl tbody tr.dvRow:nth-of-type(even){background:#FAFBFC}
+.dvTbl tbody tr.dvRow{cursor:pointer}
+.dvTbl tbody tr.dvRow:hover{background:#F2F6FA}
+.dvTbl tr.dvCons td{background:#F3F6F9;border-top:1.5px solid #D9DFE6;font-weight:600}
+.dvEst{opacity:.55}
+.dvProv{color:#A06016;background:repeating-linear-gradient(45deg,transparent,transparent 5px,rgba(199,122,46,.06) 5px,rgba(199,122,46,.06) 10px)}
+.dvNa{color:#A9B2BB}
+.dvBarWrap{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.dvBar{position:relative;display:inline-block;width:96px;height:10px;background:#EEF1F4;border-radius:2px;flex:none}
+.dvBar i{position:absolute;top:0;height:10px;border-radius:2px}
+.dvBar u{position:absolute;left:50%;top:0;width:1px;height:10px;background:#C6CDD4}
+.dvVal{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;min-width:56px;text-align:right}
+.mchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.mchips button{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:1px solid #D9DFE6;background:#fff;color:#4A5763;padding:5px 13px;border-radius:999px;cursor:pointer}
+.mchips button.on{background:#275A86;border-color:#275A86;color:#fff}
+.mchips button:disabled{opacity:.4;cursor:not-allowed}
+tr.dvDet>td{padding:0;border-bottom:1px solid #EDF0F3;background:#FBFCFD}
+.dvDetBox{padding:11px 14px;display:grid;grid-template-columns:1fr 1fr;gap:5px 26px}
+.dvDetBox>div{display:flex;justify-content:space-between;gap:12px;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#16212B}
+.dvDetBox .k{font-family:'Inter',sans-serif;color:#4A5763;font-weight:500}
+.dvFoot{font-size:11.5px;color:#4A5763;margin-top:9px}
+@media(max-width:760px){.dvSpark{display:none}.dvBar{width:64px}}
+@media(prefers-reduced-motion:reduce){.dvTbl *,.dvDetBox{transition:none!important;animation:none!important}}
+
 .wkcol{background:#EEF3EC}
 th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
   .needbox.neg{border-color:var(--red);background:linear-gradient(180deg,#FBEAE6,#fff)}
@@ -295,8 +326,11 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
     <div class="row" style="margin-bottom:12px;align-items:center;gap:9px"><span class="note" style="font-weight:600;color:var(--text)">Vista:</span><div class="tabs sm" id="desvioViewTabs"></div></div>
     <div class="sct" style="margin-top:2px">Comparativo dinámico</div>
     <div id="segChart" style="margin-bottom:14px"></div>
-    <div class="scr"><table><thead><tr><th class="l">Mes</th><th>Fact. estimada</th><th>Fact. real</th><th>Cubiertos est.</th><th>Cubiertos real</th><th>Desvío fact.</th><th>Cub.prom '25</th><th>Ajustado infl.</th><th>Cub.prom '26</th><th>Real vs infl.</th></tr></thead>
+    <div class="sct" style="margin-top:16px">Por local · mes seleccionado</div>
+    <div class="mchips" id="desvioMesChips"></div>
+    <div class="scr"><table class="dvTbl"><thead><tr><th class="l">Local</th><th class="l dvSpark">Tendencia 6m</th><th>Fact. estimada</th><th>Fact. real</th><th>Desvío fact.</th><th>Cub. prom. real vs infl.</th></tr></thead>
     <tbody id="desvioBody"></tbody></table></div>
+    <p class="dvFoot">Tinta plena = real cerrado · tono claro = estimado · rayado = provisorio</p>
   </div>
 
 </div>
@@ -763,16 +797,140 @@ function renderOutputs(){
   cb+='<tr class="fin"><td class="l">Caja acumulada</td>'+cs.map(x=>'<td class="mono '+(x.acum<0?'neg':'pos')+'">'+fmtM(x.acum)+'</td>').join('')+'<td class="mono">—</td></tr>';
   document.getElementById('cashBody').innerHTML=cb;
 
-  document.getElementById('desvioBody').innerHTML=MESES.map(function(mes,m){
-    const closed=m<state.cerrados;let estF=0,estC=0,realF=0,realC=0,histF=0,histC=0;
-    LOCALS.forEach(function(L){if(desvioView!=="cons"&&L!==desvioView)return;estF+=projFact(scen,L,m);estC+=state.hist[L].cub[m]*(1+state.qDelta[scen][L]/100);realF+=state.real[L].fact[m];realC+=state.real[L].cub[m];histF+=state.hist[L].fact[m];histC+=state.hist[L].cub[m];});
-    const t25=histC>0?histF/histC:0;const taj=t25*(1+(+state.inflacion[m]||0)/100);const t26=realC>0?realF/realC:0;const rvi=(taj>0&&t26>0)?(t26/taj-1)*100:0;
-    if(!closed)return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="note">pendiente</td><td class="mono">'+fmtN(estC)+'</td><td class="note">—</td><td class="note">—</td><td class="mono">'+fmtP(t25)+'</td><td class="mono">'+fmtP(taj)+'</td><td class="note">—</td><td class="note">—</td></tr>';
-    const dev=estF>0?(realF/estF-1)*100:0;
-    return '<tr><td class="l">'+mes+'</td><td class="mono">'+fmtM(estF)+'</td><td class="mono">'+fmtM(realF)+'</td><td class="mono">'+fmtN(estC)+'</td><td class="mono">'+fmtN(realC)+'</td><td class="mono '+(dev<0?'neg':'pos')+'">'+(dev>=0?'+':'')+fmtAR(dev,0)+'%</td><td class="mono">'+fmtP(t25)+'</td><td class="mono">'+fmtP(taj)+'</td><td class="mono">'+fmtP(t26)+'</td><td class="mono '+(rvi<0?'neg':'pos')+'">'+(rvi>=0?'+':'')+fmtAR(rvi,0)+'%</td></tr>';
-  }).join('');
+  buildDesvioMesChips();renderDesvioTabla();
 
   drawChart();renderCorteOut();renderBreakeven();var _bms=document.getElementById('beMesSel');if(_bms)_bms.onchange=function(){state.beMes=+_bms.value;renderOutputs();guardarNube();};renderCashOut();renderSegChart();renderCmvCompare();renderHistMonitor();
+}
+
+
+/* ===== Estimado vs real · por local (rediseño de presentación) ===== */
+var desvioMes=0, dvOpen=null;
+
+function dvNum(v){return (v==null||v==='')?0:(+v||0);}
+function dvCorte(L,m,k){try{return dvNum(state.corte[L][k][m]);}catch(e){return 0;}}
+
+/* estado del dato: real | prov | sin | est  (misma lógica de cierre que usa la app) */
+function dvEstadoLocal(L,m){
+  var cerr=+state.cerrados||0;
+  var realF=dvNum(state.real[L].fact[m]);
+  var corF=dvCorte(L,m,'fact');
+  if(m<cerr&&realF>0)return 'real';
+  if(corF>0)return 'prov';
+  if(m<cerr)return 'sin';
+  return 'est';
+}
+function dvMesHabilitado(m){
+  if(m<(+state.cerrados||0))return true;
+  return LOCALS.some(function(L){return dvCorte(L,m,'fact')>0;});
+}
+function dvCls(st){return st==='est'?'dvEst':(st==='prov'?'dvProv':(st==='sin'?'dvNa':''));}
+
+/* serie de facturación real de los últimos 6 meses con dato */
+function dvSerieReal(L){
+  var out=[],hm=state.histM&&state.histM[L];
+  if(hm&&Array.isArray(hm.f26))hm.f26.forEach(function(v){if(v!=null&&+v>0)out.push(+v);});
+  if(state.real&&state.real[L]&&Array.isArray(state.real[L].fact))state.real[L].fact.forEach(function(v){if(v!=null&&+v>0)out.push(+v);});
+  return out.slice(-6);
+}
+function dvSpark(vals){
+  if(!vals.length)return '<span class="dvNa">—</span>';
+  var W=84,H=24,p=3;
+  if(vals.length===1)return '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><circle cx="'+(W-p)+'" cy="'+(H/2)+'" r="2.5" fill="#16212B"/></svg>';
+  var lo=Math.min.apply(null,vals),hi=Math.max.apply(null,vals),rng=(hi-lo)||1;
+  var x=function(i){return p+(W-2*p)*(i/(vals.length-1));};
+  var y=function(v){return p+(H-2*p)*(1-(v-lo)/rng);};
+  var d='';vals.forEach(function(v,i){d+=(i?' L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);});
+  return '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'+
+    '<path d="'+d+'" fill="none" stroke="#275A86" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<circle cx="'+x(vals.length-1).toFixed(1)+'" cy="'+y(vals[vals.length-1]).toFixed(1)+'" r="2.5" fill="#16212B"/></svg>';
+}
+
+/* barra divergente: tope 50% del ancho en ±20% */
+function dvBarra(v,nota){
+  if(v==null)return '<div class="dvBarWrap"><span class="dvVal '+(nota?'dvProv':'dvNa')+'">'+(nota||'—')+'</span></div>';
+  var CAP=20,HALF=48,av=Math.min(Math.abs(v),CAP),w=(av/CAP)*HALF;
+  var col=v>=0?'#1E8A5B':'#BE4733';
+  var fill=v>=0?'<i style="left:50%;width:'+w.toFixed(1)+'px;background:'+col+'"></i>'
+               :'<i style="left:'+(HALF-w).toFixed(1)+'px;width:'+w.toFixed(1)+'px;background:'+col+'"></i>';
+  return '<div class="dvBarWrap"><span class="dvBar">'+fill+'<u></u></span>'+
+    '<span class="dvVal" style="color:'+col+'">'+(v>=0?'+':'\u2212')+fmtAR(Math.abs(v),1)+'%</span></div>';
+}
+
+function dvDatosLocal(L,m){
+  var st=dvEstadoLocal(L,m);
+  var estF=projFact(scen,L,m);
+  var estC=state.hist[L].cub[m]*(1+state.qDelta[scen][L]/100);
+  var realF=dvNum(state.real[L].fact[m]),realC=dvNum(state.real[L].cub[m]);
+  if(st==='prov'&&realF<=0){realF=dvCorte(L,m,'fact');realC=dvCorte(L,m,'cub');}
+  return {L:L,st:st,estF:estF,estC:estC,realF:realF,realC:realC,
+          histF:dvNum(state.hist[L].fact[m]),histC:dvNum(state.hist[L].cub[m])};
+}
+function dvDerivados(d,m){
+  var t25=d.histC>0?d.histF/d.histC:0;
+  var taj=t25*(1+(+state.inflacion[m]||0)/100);
+  var t26=d.realC>0?d.realF/d.realC:0;
+  var rvi=(d.st==='real'&&taj>0&&t26>0)?(t26/taj-1)*100:null;
+  var dev=(d.st==='real'&&d.estF>0)?(d.realF/d.estF-1)*100:null;
+  return {t25:t25,taj:taj,t26:t26,rvi:rvi,dev:dev};
+}
+
+function buildDesvioMesChips(){
+  var el=document.getElementById('desvioMesChips');if(!el)return;
+  if(!dvMesHabilitado(desvioMes)){var f=MESES.map(function(_,i){return i;}).filter(dvMesHabilitado);desvioMes=f.length?f[f.length-1]:0;}
+  el.innerHTML=MESES.map(function(mz,i){
+    var on=(i===desvioMes),hab=dvMesHabilitado(i);
+    return '<button data-dm="'+i+'"'+(on?' class="on"':'')+(hab?'':' disabled')+'>'+mz+'</button>';
+  }).join('');
+  el.querySelectorAll('button[data-dm]').forEach(function(b){
+    b.onclick=function(){if(b.disabled)return;desvioMes=+b.dataset.dm;dvOpen=null;buildDesvioMesChips();renderDesvioTabla();};
+  });
+}
+
+function renderDesvioTabla(){
+  var body=document.getElementById('desvioBody');if(!body)return;
+  var m=Math.max(0,Math.min(MESES.length-1,+desvioMes||0));
+  var ds=LOCALS.map(function(L){return dvDatosLocal(L,m);});
+  var C={L:'Consolidado',estF:0,estC:0,realF:0,realC:0,histF:0,histC:0};
+  ds.forEach(function(d){C.estF+=d.estF;C.estC+=d.estC;C.realF+=d.realF;C.realC+=d.realC;C.histF+=d.histF;C.histC+=d.histC;});
+  var sts=ds.map(function(d){return d.st;});
+  C.st = sts.every(function(x){return x==='real';})?'real'
+       : (sts.some(function(x){return x==='prov';})||sts.some(function(x){return x==='real';}))?'prov'
+       : (sts.every(function(x){return x==='est';})?'est':'sin');
+
+  function fila(d,esCons){
+    var k=dvDerivados(d,m),cls=dvCls(d.st),i=LOCALS.indexOf(d.L);
+    var notaProv=(d.st==='prov')?'parcial':null;
+    var realTxt=(d.st==='sin')?'<span class="dvNa">sin dato</span>'
+              :(d.st==='est')?'<span class="dvNa">pendiente</span>'
+              :fmtM(d.realF);
+    return '<tr class="dvRow'+(esCons?' dvCons':'')+'" data-dvl="'+(esCons?'cons':i)+'">'+
+      '<td class="l">'+esc(d.L)+'</td>'+
+      '<td class="l dvSpark">'+(esCons?'':dvSpark(dvSerieReal(d.L)))+'</td>'+
+      '<td class="'+(d.st==='real'?'':'dvEst')+'">'+fmtM(d.estF)+'</td>'+
+      '<td class="'+cls+'">'+realTxt+'</td>'+
+      '<td>'+dvBarra(k.dev,notaProv)+'</td>'+
+      '<td>'+dvBarra(k.rvi,notaProv)+'</td></tr>'+
+      '<tr class="dvDet" data-dvd="'+(esCons?'cons':i)+'" style="display:none"><td colspan="6">'+
+      '<div class="dvDetBox">'+
+        '<div><span class="k">Cubiertos est.</span><span>'+fmtN(Math.round(d.estC))+'</span></div>'+
+        '<div><span class="k">Cubiertos real</span><span class="'+cls+'">'+(d.realC>0?fmtN(Math.round(d.realC)):'—')+'</span></div>'+
+        '<div><span class="k">Ticket prom. \'25</span><span>'+(k.t25>0?fmtP(k.t25):'—')+'</span></div>'+
+        '<div><span class="k">Ajustado x inflación</span><span>'+(k.taj>0?fmtP(k.taj):'—')+'</span></div>'+
+        '<div><span class="k">Ticket prom. \'26</span><span class="'+cls+'">'+(k.t26>0?fmtP(k.t26):'—')+'</span></div>'+
+        '<div><span class="k">Desvío cubiertos</span><span>'+((d.st==='real'&&d.estC>0&&d.realC>0)?((d.realC/d.estC-1>=0?'+':'\u2212')+fmtAR(Math.abs((d.realC/d.estC-1)*100),1)+'%'):'—')+'</span></div>'+
+      '</div></td></tr>';
+  }
+  body.innerHTML=ds.map(function(d){return fila(d,false);}).join('')+fila(C,true);
+  body.querySelectorAll('tr.dvRow').forEach(function(tr){
+    tr.onclick=function(){
+      var k=tr.getAttribute('data-dvl');
+      var det=body.querySelector('tr.dvDet[data-dvd="'+k+'"]');if(!det)return;
+      var abrir=(det.style.display==='none');
+      body.querySelectorAll('tr.dvDet').forEach(function(x){x.style.display='none';});
+      det.style.display=abrir?'':'none';dvOpen=abrir?k:null;
+    };
+  });
+  if(dvOpen!=null){var d0=body.querySelector('tr.dvDet[data-dvd="'+dvOpen+'"]');if(d0)d0.style.display='';}
 }
 
 function drawChart(){
