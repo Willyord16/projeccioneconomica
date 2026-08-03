@@ -494,6 +494,7 @@ function buildGlobals(){
 function buildInf(){
   document.getElementById('infRow').innerHTML='<table><thead><tr><th class="l">Mes</th>'+MESES.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody><tr><td class="l">Inflación %</td>'+MESES.map((_,m)=>'<td>'+inp('inflacion.'+m,{dec:2})+'</td>').join('')+'</tr></tbody></table>';
 }
+function cubPromRealTxt(L,m){try{var f=+state.real[L].fact[m]||0,c=+state.real[L].cub[m]||0;if(f>0&&c>0)return fmtP(f/c);}catch(e){}return '<span style="color:#A9B2BB">\u2014</span>';}
 function buildLocalPanel(){
   const L=localTab;
   let rows=MESES.map(function(mes,m){
@@ -503,9 +504,10 @@ function buildLocalPanel(){
       +'<td class="calc mono" data-cp="'+L+'|'+m+'">'+fmtP(cubProm('hist',L,m))+'</td>'
       +'<td class="calc mono" data-ca="'+L+'|'+m+'">'+fmtP(cubAjust(L,m))+'</td>'
       +'<td>'+inp('real.'+L+'.fact.'+m,{dec:0})+'</td>'
-      +'<td>'+inp('real.'+L+'.cub.'+m,{dec:0})+'</td></tr>';
+      +'<td>'+inp('real.'+L+'.cub.'+m,{dec:0})+'</td>'
+      +'<td class="calc mono" data-cpr="'+L+'|'+m+'">'+cubPromRealTxt(L,m)+'</td></tr>';
   }).join('');
-  document.getElementById('localPanel').innerHTML='<table><thead><tr><th class="l">Mes</th><th>Fact. hist ($)</th><th>Cub. hist</th><th>Cub. prom</th><th>Cub. ajust</th><th>Fact. real ($)</th><th>Cub. real</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  document.getElementById('localPanel').innerHTML='<table><thead><tr><th class="l">Mes</th><th>Fact. hist ($)</th><th>Cub. hist</th><th>Cub. prom</th><th>Cub. ajust</th><th>Fact. real ($)</th><th>Cub. real</th><th>Cub. prom. real</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function buildExtraPL(){
   var el=document.getElementById('extraPLBody');if(!el)return;
@@ -545,6 +547,7 @@ function buildDebt(){
 function updateComputed(){
   document.querySelectorAll('[data-cp]').forEach(function(td){const a=td.dataset.cp.split('|');td.textContent=fmtP(cubProm('hist',a[0],+a[1]));});
   document.querySelectorAll('[data-ca]').forEach(function(td){const a=td.dataset.ca.split('|');td.textContent=fmtP(cubAjust(a[0],+a[1]));});
+  document.querySelectorAll('[data-cpr]').forEach(function(td){const a=td.dataset.cpr.split('|');td.innerHTML=cubPromRealTxt(a[0],+a[1]);});
 }
 
 function mvPct(L){var c=state.costos[L];var v=(c.cmv+state.cmvStress[scen]+c.reg+c.imp+c.mant)/100;return 1-v;}
@@ -927,9 +930,9 @@ function renderDesvioTabla(){
       '<div class="dvDetBox">'+
         '<div><span class="k">Cubiertos est.</span><span>'+fmtN(Math.round(d.estC))+'</span></div>'+
         '<div><span class="k">Cubiertos real</span><span class="'+cls+'">'+(d.realC>0?fmtN(Math.round(d.realC)):'—')+'</span></div>'+
-        '<div><span class="k">Ticket prom. \'25</span><span>'+(k.t25>0?fmtP(k.t25):'—')+'</span></div>'+
+        '<div><span class="k">Cubierto prom. \'25</span><span>'+(k.t25>0?fmtP(k.t25):'—')+'</span></div>'+
         '<div><span class="k">Ajustado x inflación</span><span>'+(k.taj>0?fmtP(k.taj):'—')+'</span></div>'+
-        '<div><span class="k">Ticket prom. \'26</span><span class="'+cls+'">'+(k.t26>0?fmtP(k.t26):'—')+'</span></div>'+
+        '<div><span class="k">Cubierto prom. \'26</span><span class="'+cls+'">'+(k.t26>0?fmtP(k.t26):'—')+'</span></div>'+
         '<div><span class="k">Desvío cubiertos</span><span>'+((d.st==='real'&&d.estC>0&&d.realC>0)?((d.realC/d.estC-1>=0?'+':'\u2212')+fmtAR(Math.abs((d.realC/d.estC-1)*100),1)+'%'):'—')+'</span></div>'+
       '</div></td></tr>';
   }
@@ -1213,10 +1216,10 @@ function renderCmvCompare(){
     var vals=[];d.forEach(function(r){var a=get25(r),b=get26(r);if(a!=null)vals.push(a);if(b!=null)vals.push(b);});
     if(!vals.length)vals=[0,1];
     var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals),yMax=Math.ceil(mx+1.5),yMin=Math.floor(mn-1.5);if(yMax-yMin<4)yMax=yMin+4;
-    var W=720,H=220,padL=40,padR=14,padT=22,padB=30,pw=W-padL-padR,ph=H-padT-padB,N=12;
+    var W=640,H=185,padL=38,padR=12,padT=19,padB=27,pw=W-padL-padR,ph=H-padT-padB,N=12;
     function xOf(i){return padL+i*(pw/(N-1));}
     function yOf(v){return padT+(yMax-v)/(yMax-yMin)*ph;}
-    var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">';
+    var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:640px;height:auto" xmlns="http://www.w3.org/2000/svg">';
     [yMax,(yMax+yMin)/2,yMin].forEach(function(g){var y=yOf(g);s+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--line)"/><text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="IBM Plex Mono" fill="var(--soft)">'+fmtAR(g,0)+'%</text>';});
     var p='';d.forEach(function(r,i){var a=get25(r);if(a!=null){p+=(p===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(a).toFixed(1)+' ';}});
     if(p)s+='<path d="'+p+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
@@ -1630,7 +1633,7 @@ var histMetric='cub';
 var histReal=true;
 var histEntryOpen=false;
 const HISTM12=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-function histGet(L,key,i){var o=state.histM&&state.histM[L];if(!o)return null;var a=o[key];if(!Array.isArray(a))return null;var v=a[i];return (v==null||v==='')?null:+v;}
+function histGet(L,key,i){var o=state.histM&&state.histM[L];var v=null;if(o){var a=o[key];if(Array.isArray(a))v=a[i];}if((v==null||v===''||+v===0)&&i>=6&&(key==='f26'||key==='c26')){var r=state.real&&state.real[L];if(r){var rv=(key==='f26'?r.fact:r.cub);if(Array.isArray(rv)){var w=rv[i-6];if(w!=null&&+w>0)return +w;}}}return (v==null||v==='')?null:+v;}
 function histAggUnits(view){if(view!=='cons')return [view];return LOCALS.filter(function(L){var o=state.histM&&state.histM[L];return o&&Array.isArray(o.f25)&&o.f25.some(function(v){return v!=null&&v!=='';});});}
 function histSeries(view,metric){
   var units=histAggUnits(view),y25=[],y26=[];
