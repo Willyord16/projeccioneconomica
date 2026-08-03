@@ -294,9 +294,6 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
     <p class="note" id="integralNote" style="margin-top:10px"></p>
   </div>
 
-  <div class="eye" data-view="caja">Curva de caja acumulada · 3 escenarios + real</div>
-  <div class="card"><div style="position:relative;height:260px"><canvas id="chart"></canvas></div></div>
-
   <div class="eye" data-view="resultados">Punto de equilibrio por local <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card"><div id="beOut"></div></div>
 
@@ -815,7 +812,7 @@ function renderOutputs(){
 
   buildDesvioMesChips();renderDesvioTabla();
 
-  drawChart();renderCorteOut();renderBreakeven();var _bms=document.getElementById('beMesSel');if(_bms)_bms.onchange=function(){state.beMes=+_bms.value;renderOutputs();guardarNube();};renderCashOut();renderSegChart();renderCmvCompare();renderHistMonitor();
+  renderCorteOut();renderBreakeven();var _bms=document.getElementById('beMesSel');if(_bms)_bms.onchange=function(){state.beMes=+_bms.value;renderOutputs();guardarNube();};renderCashOut();renderSegChart();renderCmvCompare();renderHistMonitor();
 }
 
 
@@ -947,24 +944,6 @@ function renderDesvioTabla(){
     };
   });
   if(dvOpen!=null){var d0=body.querySelector('tr.dvDet[data-dvd="'+dvOpen+'"]');if(d0)d0.style.display='';}
-}
-
-function drawChart(){
-  const ds=s=>cajaSerie(s,null,false).map(x=>x.acum/M);
-  const real=cajaSerie(scen,null,true,true).map(x=>x?x.acum/M:null);
-  const data={labels:MESES,datasets:[
-    {label:'Optimista',data:ds('opt'),borderColor:'#1E8A5B',borderWidth:2,tension:.3,pointRadius:2,fill:false},
-    {label:'Moderado',data:ds('mod'),borderColor:'#275A86',borderWidth:2,tension:.3,pointRadius:2,borderDash:[6,4],fill:false},
-    {label:'Pesimista',data:ds('pes'),borderColor:'#BE4733',borderWidth:2,tension:.3,pointRadius:2,borderDash:[2,3],fill:false},
-    {label:'Real (cerrado)',data:real,borderColor:'#16212B',borderWidth:2.5,tension:.3,pointRadius:3,pointStyle:'rectRot',fill:false}
-  ]};
-  const opts={responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{labels:{font:{family:'Inter',size:12},usePointStyle:true,pointStyleWidth:10,color:'#16212B'}},
-      tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtM(c.parsed.y*M)}}},
-    scales:{y:{ticks:{font:{family:'IBM Plex Mono',size:11},color:'#4A5763',callback:v=>(v<0?'-':'')+'$'+fmtAR(Math.abs(v),0)+'M'},grid:{color:'#E4E8EC'}},
-      x:{grid:{display:false},ticks:{font:{family:'Inter',size:12},color:'#4A5763'}}}};
-  if(typeof Chart==='undefined'){return;}
-  if(chart){chart.data=data;chart.update();}else chart=new Chart(document.getElementById('chart'),{type:'line',data,options:opts});
 }
 
 function renderLocalTabs(){
