@@ -179,6 +179,9 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
   .vnav button.on{background:var(--deep);color:#fff;border-color:var(--deep)}
   .vnav button.on .vd{color:#CFE0F0}
   .hidden-view{display:none!important}
+/* difiere el layout de las tarjetas fuera de pantalla: baja el INP al cambiar de solapa */
+.card{content-visibility:auto;contain-intrinsic-size:auto 320px}
+@media print{.card{content-visibility:visible!important;contain-intrinsic-size:none!important}}
   select.mini{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:'Inter';font-size:12px;background:#fff;color:var(--text)}
   .cashbtn{border:1px dashed var(--frame);background:#fff;color:var(--blue);border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;margin-top:4px}
   .delx{border:1px solid var(--line);background:#fff;color:var(--red);border-radius:7px;padding:5px 10px;font-size:11.5px;cursor:pointer;font-weight:600}
@@ -351,6 +354,19 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
   <div class="eye" data-view="cierre">Cierre del mes · estimado vs real <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card" id="cierreCard"><div class="cierreChips" id="cierreChips"></div><div id="cierreOut"></div></div>
 
+  <div class="eye" data-view="resultados">Estimado vs real · desvío</div>
+  <div class="card">
+    <p class="sub">El estimado queda congelado (escenario activo). Al cerrar cada mes cargás el real arriba y acá ves el desvío.</p>
+    <div class="row" style="margin-bottom:12px;align-items:center;gap:9px"><span class="note" style="font-weight:600;color:var(--text)">Vista:</span><div class="tabs sm" id="desvioViewTabs"></div></div>
+    <div class="sct" style="margin-top:2px">Comparativo dinámico</div>
+    <div id="segChart" style="margin-bottom:14px"></div>
+    <div class="sct" style="margin-top:16px">Por local · mes seleccionado</div>
+    <div class="mchips" id="desvioMesChips"></div>
+    <div class="scr"><table class="dvTbl"><thead><tr><th class="l">Local</th><th class="l dvSpark">Tendencia 6m</th><th>Fact. estimada</th><th>Fact. real</th><th>Desvío fact.</th><th>Cub. prom. real vs infl.</th></tr></thead>
+    <tbody id="desvioBody"></tbody></table></div>
+    <p class="dvFoot">Tinta plena = real cerrado · tono claro = estimado · rayado = provisorio</p>
+  </div>
+
   <div class="eye" data-view="seguimiento">Corte al 15 · termómetro del mes <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card">
     <p class="sub">Cada mes, al día 15, cargás lo real del 1 al 15 (facturación, cubiertos y CMV) por local. El tablero calcula el ritmo, el margen real y proyecta el cierre, y lo compara contra el estimado del escenario activo. Los fijos del cierre salen de tu tabla de costos fijos —actualizalos con el real del mes.</p>
@@ -365,19 +381,6 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
     <div class="scr" id="corteShare" style="margin-bottom:16px"></div>
     <div class="scr" id="corteInputs" style="margin-bottom:6px"></div>
     <div id="corteOut"></div>
-  </div>
-
-  <div class="eye" data-view="seguimiento">Estimado vs real · desvío</div>
-  <div class="card">
-    <p class="sub">El estimado queda congelado (escenario activo). Al cerrar cada mes cargás el real arriba y acá ves el desvío.</p>
-    <div class="row" style="margin-bottom:12px;align-items:center;gap:9px"><span class="note" style="font-weight:600;color:var(--text)">Vista:</span><div class="tabs sm" id="desvioViewTabs"></div></div>
-    <div class="sct" style="margin-top:2px">Comparativo dinámico</div>
-    <div id="segChart" style="margin-bottom:14px"></div>
-    <div class="sct" style="margin-top:16px">Por local · mes seleccionado</div>
-    <div class="mchips" id="desvioMesChips"></div>
-    <div class="scr"><table class="dvTbl"><thead><tr><th class="l">Local</th><th class="l dvSpark">Tendencia 6m</th><th>Fact. estimada</th><th>Fact. real</th><th>Desvío fact.</th><th>Cub. prom. real vs infl.</th></tr></thead>
-    <tbody id="desvioBody"></tbody></table></div>
-    <p class="dvFoot">Tinta plena = real cerrado · tono claro = estimado · rayado = provisorio</p>
   </div>
 
 </div>
