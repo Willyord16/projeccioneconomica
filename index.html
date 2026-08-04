@@ -81,6 +81,42 @@
 .devfold .car{color:var(--gold);width:12px;display:inline-block}
 .devfold .pill{font-size:10.5px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--soft);background:#EFEFEA;border-radius:999px;padding:1px 8px}
 .devpanel table{background:#FFF}
+/* === Cierre del mes === */
+.cierreChips{display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.cierreChips button{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--soft);padding:5px 14px;border-radius:999px;cursor:pointer}
+.cierreChips button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.cierreChips button:disabled{opacity:.35;cursor:not-allowed}
+.cierrePdf{margin-left:auto;font-size:12px;font-weight:700;border:1.5px solid var(--blue);background:#fff;color:var(--blue);padding:6px 15px;border-radius:9px;cursor:pointer}
+.cierrePdf:hover{background:var(--bluebg)}
+.ciKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px}
+.ciKpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.ciKpi .k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin-bottom:4px}
+.ciKpi .v{font-size:19px;font-weight:800;white-space:nowrap}
+.ciKpi .v .e{opacity:.55;font-size:13px}
+.ciKpi .s{font-size:11px;margin-top:3px;font-weight:700}
+.ciKpi.m{border-left:4px solid var(--blue)}.ciKpi.w{border-left:4px solid var(--red)}.ciKpi.g{border-left:4px solid var(--green)}
+.ciGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:15px}
+.ciLoc{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.ciLoc .hd{padding:10px 14px;font-weight:800;font-size:13.5px;display:flex;justify-content:space-between;align-items:center}
+.ciLoc .tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:999px;color:#fff}
+.ciLoc.bad .hd{background:#FBF3F1;border-bottom:2px solid var(--red)}.ciLoc.bad .tag{background:var(--red)}
+.ciLoc.good .hd{background:#F2F7F4;border-bottom:2px solid var(--green)}.ciLoc.good .tag{background:var(--green)}
+.ciLoc .bd{padding:4px 14px 12px}
+.ciRow{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
+.ciRow:last-of-type{border-bottom:none}
+.ciRow .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--soft);width:80px;flex:none}
+.ciRow .r{text-align:right;flex:1}
+.ciRow .big{font-size:14.5px;font-weight:800}
+.ciRow .cmp{font-size:10.5px;color:var(--soft)}
+.ciIa{background:#F7F9FB;border-top:1.5px solid var(--line);margin:4px -14px -12px;padding:8px 14px 10px}
+.ciIa .t{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);font-weight:700;margin-bottom:4px}
+.ciIa .rw{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
+.ciIa .rw .k{color:var(--soft)}
+.ciLect{background:var(--blue);color:#fff;border-radius:12px;padding:15px 18px;font-size:13.5px;line-height:1.65}
+.ciLect b{font-weight:800}
+.ciLect .t{font-size:10px;text-transform:uppercase;letter-spacing:.09em;opacity:.75;display:block;margin-bottom:4px}
+@media(max-width:840px){.ciGrid{grid-template-columns:1fr}.ciKpis{grid-template-columns:1fr 1fr}}
+@media print{body.print-cierre *{visibility:hidden}body.print-cierre #cierreCard,body.print-cierre #cierreCard *{visibility:visible}body.print-cierre #cierreCard{position:absolute;left:0;top:0;width:100%;border:none}body.print-cierre .cierrePdf{display:none}body.print-cierre .ciLect{background:var(--bluebg);color:var(--text)}}
 /* === Flujo de caja: columna de conceptos fija al hacer scroll horizontal === */
 #cashOut .scr table td.l:not([colspan]),
 #cashOut .scr table th.l:not([colspan]){
@@ -203,6 +239,7 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
     <button data-view="caja" class="on">Caja<span class="vd">flujo · vencimientos</span></button>
     <button data-view="resultados">Resultados<span class="vd">P&amp;L · equilibrio</span></button>
     <button data-view="seguimiento">Seguimiento<span class="vd">corte 15 · desvío</span></button>
+    <button data-view="cierre">Cierre de mes<span class="vd">estimado vs real</span></button>
     <button data-view="supuestos">Supuestos<span class="vd">escenarios · costos</span></button>
     <button data-view="deuda">Deuda<span class="vd">caución · costo financiero</span></button>
   </div>
@@ -311,6 +348,9 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
     <div id="histMonitor" style="margin-top:14px"></div>
   </div>
 
+  <div class="eye" data-view="cierre">Cierre del mes · estimado vs real <span class="pill pv scen-tag">Moderado</span></div>
+  <div class="card" id="cierreCard"><div class="cierreChips" id="cierreChips"></div><div id="cierreOut"></div></div>
+
   <div class="eye" data-view="seguimiento">Corte al 15 · termómetro del mes <span class="pill pv scen-tag">Moderado</span></div>
   <div class="card">
     <p class="sub">Cada mes, al día 15, cargás lo real del 1 al 15 (facturación, cubiertos y CMV) por local. El tablero calcula el ritmo, el margen real y proyecta el cierre, y lo compara contra el estimado del escenario activo. Los fijos del cierre salen de tu tabla de costos fijos —actualizalos con el real del mes.</p>
@@ -387,7 +427,7 @@ let state={
 let scen='pes', view='cons', localTab='Warcalde', chart, editable=false, corteMes=0, corteView='cons';
 const SLBL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'};
 
-var VIEWS=['caja','resultados','seguimiento','supuestos','deuda'];
+var VIEWS=['caja','resultados','seguimiento','cierre','supuestos','deuda'];
 var curView=(function(){var h=(location.hash||'').replace('#','');return VIEWS.indexOf(h)>=0?h:'caja';})();
 function renderActiveModule(){if(curView==='deuda'&&typeof renderDeuda==='function')renderDeuda();}
 function setView(v){
@@ -582,7 +622,7 @@ var cmvView='cons';
 var cmvEntryOpen=false;
 var planOpen=false;
 var cashExpand={};
-var cashFold={};
+var cashFold={ing:1,egr:1,fin:1,rec:1,dif:1,devI:1,devE:1};
 var CONCEPTOS=['Sueldos','Cargas sociales','Alquiler','Costos fijos de servicios','Impuestos (IVA/IIBB)','Proveedores / CMV','Honorarios','Comisiones','Servicios de deuda','Otros'];
 function esc(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
 function inpW(p){return '<span style="display:inline-block;width:130px">'+inp(p,{dec:0})+'</span>';}
@@ -807,7 +847,7 @@ function renderOutputs(){
   cb+='<tr class="fin"><td class="l">Caja acumulada</td>'+cs.map(x=>'<td class="mono '+(x.acum<0?'neg':'pos')+'">'+fmtM(x.acum)+'</td>').join('')+'<td class="mono">—</td></tr>';
   document.getElementById('cashBody').innerHTML=cb;
 
-  buildDesvioMesChips();renderDesvioTabla();
+  buildDesvioMesChips();renderDesvioTabla();renderCierre();
 
   renderCorteOut();renderBreakeven();var _bms=document.getElementById('beMesSel');if(_bms)_bms.onchange=function(){state.beMes=+_bms.value;renderOutputs();guardarNube();};renderCashOut();renderSegChart();renderCmvCompare();renderHistMonitor();
 }
@@ -941,6 +981,102 @@ function renderDesvioTabla(){
     };
   });
   if(dvOpen!=null){var d0=body.querySelector('tr.dvDet[data-dvd="'+dvOpen+'"]');if(d0)d0.style.display='';}
+}
+
+
+/* ===== Cierre del mes (Seguimiento) ===== */
+var cierreMes=null;
+function ciMesOk(m){
+  if(m>=(+state.cerrados||0))return false;
+  return LOCALS.some(function(L){return (+state.real[L].fact[m]||0)>0;});
+}
+function ciDatos(L,m){
+  var estF=projFact(scen,L,m);
+  var estC=state.hist[L].cub[m]*(1+state.qDelta[scen][L]/100);
+  var realF=+state.real[L].fact[m]||0, realC=+state.real[L].cub[m]||0;
+  var cmvE=(+state.costos[L].cmv||0)+(+state.cmvStress[scen]||0);
+  var cmvR=(state.cmvReal&&state.cmvReal[L])?(+state.cmvReal[L][m]||0):0;
+  var histF=+state.hist[L].fact[m]||0, histC=+state.hist[L].cub[m]||0;
+  var iaF=histF*(1+(+state.inflacion[m]||0)/100);
+  return {L:L,estF:estF,estC:estC,realF:realF,realC:realC,cmvE:cmvE,cmvR:cmvR,histC:histC,iaF:iaF};
+}
+function ciPct(a,b){return (b>0)?((a/b-1)*100):null;}
+function ciFm(v,d){return (v>=0?'+':'\u2212')+fmtAR(Math.abs(v),d==null?1:d)+'%';}
+function ciTag(devC){
+  if(devC==null)return{t:'Sin dato',c:'bad'};
+  if(devC>=0)return{t:'Creció',c:'good'};
+  if(devC>=-10)return{t:'Aguantó',c:'good'};
+  if(devC>=-30)return{t:'Débil',c:'bad'};
+  return{t:'Crítico',c:'bad'};
+}
+function exportCierrePDF(){
+  document.body.classList.add('print-cierre');
+  setTimeout(function(){window.print();setTimeout(function(){document.body.classList.remove('print-cierre');},600);},50);
+}
+function renderCierre(){
+  var chipsEl=document.getElementById('cierreChips'),out=document.getElementById('cierreOut');
+  if(!chipsEl||!out)return;
+  var disp=[];for(var i=0;i<6;i++)if(ciMesOk(i))disp.push(i);
+  if(cierreMes==null||disp.indexOf(cierreMes)<0)cierreMes=disp.length?disp[disp.length-1]:null;
+  chipsEl.innerHTML=MESES.map(function(mz,i){
+    return '<button data-cm2="'+i+'"'+(i===cierreMes?' class="on"':'')+(disp.indexOf(i)<0?' disabled':'')+'>'+mz+'</button>';
+  }).join('')+'<button class="cierrePdf" onclick="exportCierrePDF()">\u2b07 Exportar PDF</button>';
+  chipsEl.querySelectorAll('button[data-cm2]').forEach(function(b){
+    b.onclick=function(){if(b.disabled)return;cierreMes=+b.dataset.cm2;renderCierre();};
+  });
+  if(cierreMes==null){out.innerHTML='<p class="note">Todav\u00eda no hay meses cerrados con datos reales cargados. Cerr\u00e1 un mes en Supuestos (facturaci\u00f3n y cubiertos reales + contador de meses cerrados) y el cierre aparece ac\u00e1.</p>';return;}
+  var m=cierreMes;
+  var ds=LOCALS.map(function(L){return ciDatos(L,m);});
+  var C={estF:0,estC:0,realF:0,realC:0,histC:0,iaF:0,mgSum:0,cmvEw:0,cmvRw:0,cmvRok:true};
+  ds.forEach(function(d){C.estF+=d.estF;C.estC+=d.estC;C.realF+=d.realF;C.realC+=d.realC;C.histC+=d.histC;C.iaF+=d.iaF;
+    if(d.cmvR>0){C.mgSum+=(d.cmvE-d.cmvR)/100*d.realF;C.cmvEw+=d.cmvE*d.realF;C.cmvRw+=d.cmvR*d.realF;}else C.cmvRok=false;});
+  var devF=ciPct(C.realF,C.estF),devC=ciPct(C.realC,C.estC);
+  var promE=C.estC>0?C.estF/C.estC:0,promR=C.realC>0?C.realF/C.realC:0;
+  var devP=ciPct(promR,promE);
+  var cmvEp=C.realF>0?C.cmvEw/C.realF:0,cmvRp=C.realF>0?C.cmvRw/C.realF:0;
+  function kpi(cls,k,e,r,s,scls){return '<div class="ciKpi '+cls+'"><div class="k">'+k+'</div><div class="v mono"><span class="e">'+e+'</span> \u2192 '+r+'</div><div class="s mono '+scls+'">'+s+'</div></div>';}
+  var hh='<div class="ciKpis">';
+  hh+=kpi('m','Facturaci\u00f3n \u00b7 est \u2192 real',fmtM(C.estF),fmtM(C.realF),(devF!=null?ciFm(devF)+' \u00b7 '+(C.realF-C.estF>=0?'+':'\u2212')+fmtM(Math.abs(C.realF-C.estF)):'\u2014'),devF>=0?'pos':'neg');
+  hh+=kpi(devC>=0?'g':'w','Cubiertos \u00b7 est \u2192 real',fmtN(Math.round(C.estC)),fmtN(Math.round(C.realC)),(devC!=null?ciFm(devC)+' \u00b7 '+(C.realC-C.estC>=0?'sobraron ':'faltaron ')+fmtN(Math.round(Math.abs(C.realC-C.estC))):'\u2014'),devC>=0?'pos':'neg');
+  hh+=kpi(devP>=0?'g':'w','Cub. promedio \u00b7 est \u2192 real',fmtP(promE),fmtP(promR),(devP!=null?ciFm(devP)+' vs inflaci\u00f3n':'\u2014'),devP>=0?'pos':'neg');
+  hh+=C.cmvRok?kpi(C.mgSum>=0?'g':'w','CMV \u00b7 est \u2192 real',fmtAR(cmvEp,1)+'%',fmtAR(cmvRp,1)+'%',(cmvRp-cmvEp>=0?'+':'\u2212')+fmtAR(Math.abs(cmvRp-cmvEp),1)+' pp \u00b7 '+(C.mgSum>=0?'+':'\u2212')+fmtM(Math.abs(C.mgSum))+' margen',C.mgSum>=0?'pos':'neg')
+    :kpi('w','CMV \u00b7 est \u2192 real',fmtAR(cmvEp,1)+'%','\u2014','falta CMV real del mes','neg');
+  hh+='</div>';
+  hh+='<div class="ciGrid">'+ds.map(function(d){
+    var dF=ciPct(d.realF,d.estF),dC=ciPct(d.realC,d.estC);
+    var pE=d.estC>0?d.estF/d.estC:0,pR=d.realC>0?d.realF/d.realC:0,dP=ciPct(pR,pE);
+    var mg=(d.cmvR>0)?(d.cmvE-d.cmvR)/100*d.realF:null;
+    var iaC=ciPct(d.realC,d.histC),iaFv=ciPct(d.realF,d.iaF);
+    var tg=ciTag(dC);
+    function row(l,big,cmp){return '<div class="ciRow"><span class="l">'+l+'</span><span class="r"><div class="big mono">'+big+'</div><div class="cmp mono">'+cmp+'</div></span></div>';}
+    var sinReal=(d.realF<=0);
+    var b='<div class="ciLoc '+tg.c+'"><div class="hd">'+esc(d.L)+' <span class="tag">'+tg.t+'</span></div><div class="bd">';
+    if(sinReal){b+='<p class="note" style="padding:10px 0">Sin real cargado este mes.</p></div></div>';return b;}
+    b+=row('Facturaci\u00f3n',fmtM(d.realF),'est '+fmtM(d.estF)+' \u00b7 <b class="'+(dF>=0?'pos':'neg')+'">'+ciFm(dF)+'</b>');
+    b+=row('Cubiertos',fmtN(Math.round(d.realC)),'est '+fmtN(Math.round(d.estC))+' \u00b7 <b class="'+(dC>=0?'pos':'neg')+'">'+ciFm(dC)+'</b>');
+    b+=row('Cub. prom.',fmtP(pR),'infl. ped\u00eda '+fmtP(pE)+' \u00b7 <b class="'+(dP>=0?'pos':'neg')+'">'+ciFm(dP)+'</b>');
+    b+=row('CMV',(d.cmvR>0?fmtAR(d.cmvR,1)+'%':'\u2014'),(d.cmvR>0?('est '+fmtAR(d.cmvE,1)+'% \u00b7 <b class="'+(mg>=0?'pos':'neg')+'">'+(mg>=0?'+':'\u2212')+fmtM(Math.abs(mg))+'</b>'):'falta cargar CMV real'));
+    b+='<div class="ciIa"><div class="t">vs '+MESES[m]+' 2025</div>'+
+       '<div class="rw mono"><span class="k">Cubiertos</span><span>'+fmtN(Math.round(d.histC))+' \u2192 '+fmtN(Math.round(d.realC))+' \u00b7 <b class="'+(iaC>=0?'pos':'neg')+'">'+(iaC!=null?ciFm(iaC):'\u2014')+'</b></span></div>'+
+       '<div class="rw mono"><span class="k">Fact. ajust. infl.</span><span>'+fmtM(d.iaF)+' \u2192 '+fmtM(d.realF)+' \u00b7 <b class="'+(iaFv>=0?'pos':'neg')+'">'+(iaFv!=null?ciFm(iaFv):'\u2014')+'</b></span></div></div>';
+    b+='</div></div>';return b;
+  }).join('')+'</div>';
+  // lectura por reglas
+  var lect='';
+  if(devC!=null&&devP!=null){
+    var driver=Math.abs(devC)>=Math.abs(devP)?'tr\u00e1fico':'precio';
+    var peores=ds.filter(function(d){return d.realF>0;}).map(function(d){return{L:d.L,v:ciPct(d.realC,d.estC)};}).sort(function(a,b){return a.v-b.v;});
+    lect='El mes se explica por <b>'+driver+'</b>: cubiertos '+ciFm(devC)+' vs plan';
+    if(peores.length>=2)lect+=' ('+peores.slice(0,2).map(function(x){return esc(x.L)+' '+ciFm(x.v,0);}).join(', ')+')';
+    lect+='. El cubierto promedio qued\u00f3 '+ciFm(devP)+' contra el ajuste por inflaci\u00f3n.';
+    if(C.cmvRok&&Math.abs(cmvRp-cmvEp)>=2){
+      lect+=' El <b>CMV '+(C.mgSum>=0?'vino por debajo del supuesto y devolvi\u00f3 <b>+'+fmtM(C.mgSum)+'</b> de margen':'super\u00f3 el supuesto y cost\u00f3 <b>\u2212'+fmtM(Math.abs(C.mgSum))+'</b> de margen')+'</b>.';
+    }
+    var peor=peores[0];
+    if(peor&&peor.v<-10)lect+=' Prioridad: demanda en '+esc(peor.L)+(peores[1]&&peores[1].v<-10?' y '+esc(peores[1].L):'')+'.';
+  } else lect='Faltan datos para la lectura autom\u00e1tica.';
+  hh+='<div class="ciLect"><span class="t">Lectura de '+MESES[m]+'</span>'+lect+'</div>';
+  out.innerHTML=hh;
 }
 
 function renderLocalTabs(){
