@@ -204,12 +204,9 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
     <button data-view="resultados">Resultados<span class="vd">P&amp;L · equilibrio</span></button>
     <button data-view="seguimiento">Seguimiento<span class="vd">corte 15 · desvío</span></button>
     <button data-view="supuestos">Supuestos<span class="vd">escenarios · costos</span></button>
-    <button data-view="palancas">Palancas<span class="vd">plan · impacto de gestión</span></button>
     <button data-view="deuda">Deuda<span class="vd">caución · costo financiero</span></button>
   </div>
 
-  <div class="eye" data-view="palancas">Plan a diciembre · impacto de mi gestión</div>
-  <div class="card" id="planWrap"></div>
 
   <div class="eye" data-view="deuda">Caución bursátil · registro y proyección</div>
   <div class="card" id="deudaWrap"></div>
@@ -390,9 +387,9 @@ let state={
 let scen='pes', view='cons', localTab='Warcalde', chart, editable=false, corteMes=0, corteView='cons';
 const SLBL={pes:'Pesimista',mod:'Moderado',opt:'Optimista'};
 
-var VIEWS=['caja','resultados','seguimiento','supuestos','palancas','deuda'];
+var VIEWS=['caja','resultados','seguimiento','supuestos','deuda'];
 var curView=(function(){var h=(location.hash||'').replace('#','');return VIEWS.indexOf(h)>=0?h:'caja';})();
-function renderActiveModule(){if(curView==='deuda'&&typeof renderDeuda==='function')renderDeuda();else if(curView==='palancas'&&typeof renderPlan==='function')renderPlan();}
+function renderActiveModule(){if(curView==='deuda'&&typeof renderDeuda==='function')renderDeuda();}
 function setView(v){
   if(VIEWS.indexOf(v)<0)v='caja';curView=v;
   var nav=document.getElementById('vnav');
@@ -1227,7 +1224,6 @@ function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildC
 const DEFAULTS=JSON.parse(JSON.stringify(state));
 function normalizar(){
   if(!Array.isArray(state.extraPL))state.extraPL=[];
-  try{if(state.plan){['Warcalde','Güemes','Capke'].forEach(function(L){var P=state.plan[L];if(P&&P.pal&&P.pal.cmv&&!('hoy' in P.pal.cmv))P.pal.cmv.hoy='';});}}catch(e){}
   if(state.deuda){
     if(!Array.isArray(state.deuda.bancoCap))state.deuda.bancoCap=Array.isArray(state.deuda.banco)?state.deuda.banco.slice():[0,0,0,0,0,0];
     if(!Array.isArray(state.deuda.bancoInt))state.deuda.bancoInt=[0,0,0,0,0,0];
@@ -1315,96 +1311,6 @@ function normalizar(){
   if(!Array.isArray(_cs.diferimientos))_cs.diferimientos=[];
   _cs.diferimientos.forEach(function(d){if(!d.unidad)d.unidad='Warcalde';});
 }
-/* ===================== MÓDULO PALANCAS (Plan a diciembre) ===================== */
-var _plSim={};
-function PL(){return state.plan[state.plan.local];}
-function plCmvHoy(L){var P=(state.plan&&state.plan[L])?state.plan[L]:null;var hv=P&&P.pal&&P.pal.cmv?P.pal.cmv.hoy:'';if(hv!==''&&hv!=null&&!isNaN(+hv))return +hv;return (state.costos&&state.costos[L]?+state.costos[L].cmv:0)||0;}
-function plH25cmv(L){var a=state.cmvHist&&state.cmvHist[L];if(!Array.isArray(a))return[];return a.slice(6,12);}
-function plNum(x){return (x===''||x==null||isNaN(+x))?null:+x;}
-function plFmtPP(v){return (v>=0?'+':'−')+fmtAR(Math.abs(v),1)+' pp';}
-function plFmtPct(v){return (v>=0?'+':'−')+fmtAR(Math.abs(v),1)+'%';}
-function plFmtLvl(v){return fmtAR(v,1)+'%';}
-function plHoy(id){var P=PL();if(id==='cmv')return plCmvHoy(state.plan.local);return plNum(P.pal[id]&&P.pal[id].hoy);}
-function plAporte(id){var P=PL();if(id==='cub')return 0;var hoy=plHoy(id),meta=plNum(P.pal[id]&&P.pal[id].meta);if(hoy==null||meta==null)return 0;return Math.max(0,hoy-meta);}
-function plSum(){return ['cmv','suel','imp'].reduce(function(a,id){return a+plAporte(id);},0);}
-function plObjetivo(){var b=plNum(PL().base);return (b==null?0:b)+plSum();}
-// impacto
-function plNivelReal(id,mi){var P=PL();var r=P.real[id]&&P.real[id][mi];return plNum(r);}
-function plPPMes(mi){var s=0,hay=false;['cmv','suel','imp'].forEach(function(id){var hoy=plHoy(id),r=plNivelReal(id,mi);if(hoy!=null&&r!=null){s+=(hoy-r);hay=true;}});return hay?s:null;}
-function plPPsost(){var ms=[];for(var mi=0;mi<6;mi++){var v=plPPMes(mi);if(v!=null)ms.push(v);}return ms.length?ms.reduce(function(a,b){return a+b;},0)/ms.length:null;}
-function plPPpal(id){var hoy=plHoy(id),P=PL(),ms=[];for(var mi=0;mi<6;mi++){var r=plNum(P.real[id]&&P.real[id][mi]);if(hoy!=null&&r!=null)ms.push(hoy-r);}return ms.length?ms.reduce(function(a,b){return a+b;},0)/ms.length:null;}
-function plFact(mi){var f=PL().fact[mi];return plNum(f);}
-function plPesosMes(mi){var f=plFact(mi);if(f==null)return null;var s=0,hay=false;['cmv','suel','imp'].forEach(function(id){var hoy=plHoy(id),r=plNivelReal(id,mi);if(hoy!=null&&r!=null){s+=(hoy-r)/100*f;hay=true;}});return hay?s:null;}
-function plPesosAcum(){var s=0;for(var mi=0;mi<6;mi++){var v=plPesosMes(mi);if(v!=null)s+=v;}return s;}
-function plPesosPal(id){var hoy=plHoy(id),P=PL(),s=0;for(var mi=0;mi<6;mi++){var f=plFact(mi),r=plNum(P.real[id]&&P.real[id][mi]);if(f!=null&&hoy!=null&&r!=null)s+=(hoy-r)/100*f;}return s;}
-function plMesesPesos(){var n=0;for(var mi=0;mi<6;mi++){if(plPesosMes(mi)!=null)n++;}return n;}
-var PLROWS=[['cmv','CMV'],['suel','Sueldos'],['imp','Impuestos'],['cub','Cubierto real'],['neta','Rent. neta']];
-function renderPlan(){var host=document.getElementById('planWrap');if(!host)return;var P=PL();if(!P){host.innerHTML='';return;}
-  var ed=!!editable;var L=state.plan.local;
-  var IST="font-family:'IBM Plex Mono';font-size:13px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;text-align:right";
-  var H='';
-  // selector local
-  H+='<div class="row" style="margin-bottom:10px"><div class="tabs sm" id="planLocTabs">'+LOCALS.map(function(x){return '<button data-pl="'+esc(x)+'"'+(x===L?' class="on"':'')+'>'+esc(x)+'</button>';}).join('')+'</div><span class="note" style="margin-left:auto">Corte trimestral · Sep y Dic</span></div>';
-  H+='<p class="sub">Muestra tu impacto de gestión en las variables que mejoran la rentabilidad. Los puntos son tasa sostenida (por mes, no se suman); lo que se acumula es la plata. Se mide contra tu punto de partida (hoy), no contra 2025. '+(ed?'':'<b>Modo lectura.</b>')+'</p>';
-  // impacto
-  var pp=plPPsost(),plan=plSum(),pes=plPesosAcum(),nM=plMesesPesos();
-  H+='<div class="card" style="background:linear-gradient(135deg,#1B3A57,#16324B);border:0;margin:12px 0"><div class="sct" style="color:#F0E4C8">Mi impacto de gestión</div>'+
-    '<div class="kpis">'+
-    '<div class="kpi" style="background:rgba(255,255,255,.05);border-color:#2A4258"><div class="k" style="color:#9FB4CA">Mejora sostenida</div><div class="v" style="color:'+(pp==null?'#9AA7B4':(pp>=plan?'#4FB37E':'#EAF0F6'))+'">'+(pp==null?'—':plFmtPP(pp))+'</div><div class="d" style="color:#8DA2B8">por mes · meta '+plFmtPP(plan)+'</div></div>'+
-    '<div class="kpi" style="background:rgba(255,255,255,.05);border-color:#2A4258"><div class="k" style="color:#9FB4CA">Impacto monetario de la gestión</div><div class="v" style="font-size:30px;color:'+(nM===0?'#9AA7B4':(pes>0?'#4FB37E':(pes<0?'#E08a7d':'#EAF0F6')))+'">'+(nM===0?'—':fmtM(pes))+'</div><div class="d" style="color:#8DA2B8">'+(nM===0?'cargá real y facturación':('en '+nM+' '+(nM===1?'mes':'meses')+' · sobre facturación real'))+'</div></div>'+
-    '</div>';
-  var brk='';['cmv','suel','imp'].forEach(function(id){var dp=plPPpal(id);if(dp==null)return;brk+='<div class="kpi" style="background:rgba(255,255,255,.05);border-color:#2A4258"><div class="k" style="color:#C9D6E4">'+({cmv:'CMV',suel:'Sueldos',imp:'Impuestos'}[id])+'</div><div class="v" style="font-size:16px;color:#4FB37E">'+plFmtPP(dp)+'</div><div class="d" style="color:#B0842F">'+fmtM(plPesosPal(id))+'</div></div>';});
-  if(brk)H+='<div class="kpis" style="margin-top:10px">'+brk+'</div>';
-  H+='</div>';
-  // objetivo
-  var b=plNum(P.base),obj=plObjetivo();
-  H+='<div class="kpis" style="margin-bottom:14px"><div class="kpi"><div class="k">Rentabilidad neta hoy</div><div class="v '+(b!=null&&b<0?'neg':'pos')+'">'+(b==null?'—':plFmtPct(b))+'</div><div class="d">punto de partida <input class="plin" data-k="base" value="'+(b==null?'':(''+P.base).replace('.',','))+'" placeholder="cargar" style="width:60px;'+IST+'" '+(ed?'':'disabled')+'></div></div>'+
-    '<div class="kpi"><div class="k">Objetivo (derivado)</div><div class="v '+(obj>=0?'pos':'neg')+'">'+(b==null?'—':plFmtPct(obj))+'</div><div class="d">hoy + aportes</div></div>'+
-    '<div class="kpi"><div class="k">Aporte de gestión (plan)</div><div class="v">'+plFmtPP(plan)+'</div><div class="d">'+(plan>=3?'cumple piso +3pp':'bajo el piso +3pp')+'</div></div></div>';
-  // palancas
-  H+='<div class="sct">Palancas · cómo se construye cada punto</div><div class="scr"><table><thead><tr><th class="l">Palanca</th><th>Hoy</th><th>Meta</th><th class="l">Acción</th><th>Aporte</th></tr></thead><tbody>';
-  [['cmv','CMV','nivel'],['suel','Sueldos + cargas','nivel'],['cub','Cubierto real','def'],['imp','Impuestos','nivel']].forEach(function(row){var id=row[0];var pal=P.pal[id];
-    var hoyC,metaC,apC,tag;
-    if(row[2]==='nivel'){
-      var hoyEditable=true; // cmv hoy editable, en pal.cmv.hoy
-      var hoyVal=plHoy(id);
-      hoyC=hoyEditable?('<input class="plin" data-k="pal.'+id+'.hoy" value="'+(pal.hoy===''||pal.hoy==null?'':(''+pal.hoy).replace('.',','))+'" style="width:52px;'+IST+'" '+(ed?'':'disabled')+'>%'):('<span class="mono">'+(hoyVal==null?'—':plFmtLvl(hoyVal))+'</span><div class="note" style="font-size:10px">de Costos</div>');
-      metaC='<input class="plin" data-k="pal.'+id+'.meta" value="'+(pal.meta===''||pal.meta==null?'':(''+pal.meta).replace('.',','))+'" style="width:52px;'+IST+'" '+(ed?'':'disabled')+'>%';
-      var a=plAporte(id);apC='<span class="mono '+(a>0?'pos':'note')+'" style="font-weight:600">'+(a>0?plFmtPP(a):'+0,0 pp')+'</span>';
-      tag=pal.tent?'<div class="note" style="color:var(--gold);font-size:10px">a validar · IIBB+Munic+cheque (IVA no)</div>':'';
-    }else{hoyC='<span class="note">100</span>';metaC='<span class="note">≥ infl.</span>';apC='<span class="note">protege · 0 pp</span>';tag='';}
-    H+='<tr><td class="l"><b>'+({cmv:'CMV',suel:'Sueldos + cargas',cub:'Cubierto real',imp:'Impuestos'}[id])+'</b>'+tag+'</td><td class="mono">'+hoyC+'</td><td class="mono">'+metaC+'</td>'+
-      '<td class="l"><input class="plin" data-k="pal.'+id+'.accion" value="'+esc(pal.accion||'')+'" style="width:100%;text-align:left;font-family:Inter;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:4px 6px" '+(ed?'':'disabled')+'></td><td class="mono">'+apC+'</td></tr>';});
-  H+='<tr class="fin"><td class="l">Total que suma</td><td></td><td></td><td class="l note">Cubierto protege · eventos aparte</td><td class="mono pos">'+plFmtPP(plSum())+'</td></tr></tbody></table></div>';
-  // grilla prometido vs logrado
-  var MES=['Jul','Ago','Sep','Oct','Nov','Dic'];
-  H+='<div class="sct" style="margin-top:16px">Prometido vs logrado · mes a mes</div><div class="scr"><table><thead><tr><th class="l">Indicador</th><th class="l"></th>'+MES.map(function(m){return '<th>'+m+'</th>';}).join('')+'</tr></thead><tbody>';
-  // fila facturación
-  H+='<tr><td class="l"><b>Facturación</b></td><td class="l note">$ M</td>'+MES.map(function(m,mi){return '<td><input class="plgrid" data-g="fact" data-m="'+mi+'" value="'+(P.fact[mi]==null||P.fact[mi]===''?'':fmtAR(+P.fact[mi]/1e6,1))+'" placeholder="—" style="width:52px;'+IST+';text-align:center" '+(ed?'':'disabled')+'></td>';}).join('')+'</tr>';
-  PLROWS.forEach(function(rw){var id=rw[0];var isNivel=(id==='cmv'||id==='suel'||id==='imp');var isCub=(id==='cub');
-    var planTxt=isCub?'mantener':(id==='neta'?(plNum(P.base)==null?'—':plFmtPct(plObjetivo())):(function(){var mt=plNum(P.pal[id]&&P.pal[id].meta);return mt==null?'—':plFmtLvl(mt);})());
-    var has25=!isCub;
-    // fila 2025 (menos cubierto)
-    if(has25){var pre=(id==='cmv')?plH25cmv(state.plan.local):null;
-      H+='<tr><td class="l metric" rowspan="3"><b>'+rw[1]+'</b></td><td class="l note" style="color:var(--gold)">2025</td>'+MES.map(function(m,mi){var v=(P.h25[id]&&P.h25[id][mi]);if((v==null||v==='')&&pre&&pre[mi]!=null)v=fmtAR(pre[mi],1);else v=(v==null||v===''?'':(''+v).replace('.',','));return '<td><input class="plgrid" data-g="h25:'+id+'" data-m="'+mi+'" value="'+v+'" placeholder="—" style="width:48px;'+IST+';text-align:center" '+(ed?'':'disabled')+'></td>';}).join('')+'</tr><tr><td class="l note">plan</td>'+MES.map(function(){return '<td class="mono" style="color:var(--frame);font-weight:600">'+planTxt+'</td>';}).join('')+'</tr>';
-    }else{H+='<tr><td class="l metric" rowspan="2"><b>'+rw[1]+'</b></td><td class="l note">plan</td>'+MES.map(function(){return '<td class="mono" style="color:var(--frame);font-weight:600">'+planTxt+'</td>';}).join('')+'</tr>';}
-    // fila real
-    H+='<tr><td class="l note">real</td>'+MES.map(function(m,mi){var rv=(P.real[id]&&P.real[id][mi]);rv=(rv==null||rv===''?'':(''+rv).replace('.',','));return '<td><input class="plgrid" data-g="real:'+id+'" data-m="'+mi+'" value="'+rv+'" placeholder="—" style="width:48px;'+IST+';text-align:center" '+(ed?'':'disabled')+'></td>';}).join('')+'</tr>';});
-  H+='</tbody></table></div>';
-  host.innerHTML=H;
-  // bindings
-  host.querySelectorAll('#planLocTabs button').forEach(function(b){b.onclick=function(){state.plan.local=b.dataset.pl;renderPlan();guardarNube();};});
-  host.querySelectorAll('.plin').forEach(function(inp){inp.addEventListener('change',function(){var k=inp.dataset.k,P=PL();
-    if(k==='base'){var v=plNum(inp.value.replace(',','.'));P.base=(v==null?'':v);}
-    else if(k.slice(-7)==='.accion'){var id=k.split('.')[1];P.pal[id].accion=inp.value;}
-    else{var parts=k.split('.');var v2=plNum(inp.value.replace(',','.'));P.pal[parts[1]][parts[2]]=(v2==null?'':v2);}
-    renderPlan();guardarNube();});});
-  host.querySelectorAll('.plgrid').forEach(function(inp){inp.addEventListener('change',function(){var g=inp.dataset.g,mi=+inp.dataset.m,P=PL();var v=plNum(inp.value.replace(',','.'));
-    if(g==='fact'){if(!Array.isArray(P.fact))P.fact=[];P.fact[mi]=(v==null?'':v*1e6);}
-    else{var parts=g.split(':'),store=parts[0]==='h25'?P.h25:P.real,id=parts[1];if(!Array.isArray(store[id]))store[id]=[];store[id][mi]=(v==null?'':v);}
-    renderPlan();guardarNube();});});}
-/* =================== FIN MÓDULO PALANCAS =================== */
-
 /* ===================== MÓDULO CAUCIÓN (Deuda) ===================== */
 var _caucP=null, _caucSim={monto:'',mes:2,tramo:'auto'};
 function caucInvalidate(){_caucP=null;}
