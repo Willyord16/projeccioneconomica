@@ -20,8 +20,8 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 18px 90px}
-@media(min-width:1500px){.wrap{max-width:1380px}}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 26px 90px}
+@media(min-width:1500px){.wrap{max-width:1150px}}
   .hero{background:radial-gradient(130% 95% at 50% -12%,rgba(126,176,238,.5),transparent 58%),linear-gradient(178deg,#2E63B8 0%,#235398 32%,#163E7C 64%,#0E2856 100%);color:#fff;border-radius:0 0 22px 22px;padding:42px 18px 36px;margin-bottom:24px}
   .hero-in{max-width:980px;margin:0 auto}
   .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#E7CF92;font-weight:600;display:flex;align-items:center;gap:10px}
@@ -715,7 +715,7 @@ function repDetalle(wi,c){
   row.querySelector('td').innerHTML=h;
 }
 
-function applyWkHide(){var st=document.getElementById('wkHideStyle');if(!st){st=document.createElement('style');st.id='wkHideStyle';document.head.appendChild(st);}var cer=+((state.cash&&state.cash.cerradas))||0;if(!cashHideCer||cer<=0){st.textContent='';return;}var n=cer+1;st.textContent='#cashOut td:nth-child(-n+'+n+'):not(.l),#cashOut th:nth-child(-n+'+n+'):not(.l){display:none}';}
+function applyWkHide(){var st=document.getElementById('wkHideStyle');if(!st){st=document.createElement('style');st.id='wkHideStyle';document.head.appendChild(st);}var cer=+((state.cash&&state.cash.cerradas))||0;if(!cashHideCer||cer<=0){st.textContent='';return;}var n=cer+1;st.textContent='#cashOut table.wktab td:nth-child(-n+'+n+'):not(.l),#cashOut table.wktab th:nth-child(-n+'+n+'):not(.l){display:none}#cashOut table.wktab colgroup col{background:transparent!important}';}
 function renderCashOut(){var out=document.getElementById('cashOut');if(!out)return;var c=computeCash(cashView);
   var crit=document.getElementById('cashCrit');if(crit)crit.textContent=c.fn>=0?('día crítico '+wLabel(c.w[c.fn])):'no rompés en el horizonte';
   var diasNum=c.fn>=0?(c.fn*7):(NSEM*7);var dias=c.fn>=0?(''+diasNum):('>'+(NSEM*7-7));var diasCl=diasNum>30?'pos':'neg';var scope=c.unit==='cons'?'grupo':c.unit;
@@ -727,8 +727,8 @@ function renderCashOut(){var out=document.getElementById('cashOut');if(!out)retu
    '<div class="kpi"><div class="k">Piso del período</div><div class="v '+(c.piso<0?'neg':'pos')+'">'+fmtM(c.piso)+'</div><div class="d">en S'+(c.pisoIdx+1)+'</div></div></div>';
   var _cerr=+state.cash.cerradas||0;var ths=c.w.map(function(d,wi){return '<th'+(wi<_cerr?' class="wkcl"':'')+'>'+wLabel(d)+'</th>';}).join('');var cgroup='<colgroup><col>'+c.w.map(function(d,wi){return '<col'+(wi<_cerr?' class="wkcol"':'')+'>';}).join('')+'</colgroup>';
   var sow='';
-  if(c.unit==='cons'){sow='<div class="sct">Disponible por sucursal · al inicio de cada semana (lunes)</div><div class="scr"><table>'+cgroup+'<thead><tr><th class="l">Sucursal</th>'+ths+'</tr></thead><tbody>';var tot=Array(NSEM).fill(0);LOCALS.forEach(function(L){var cc=computeCash(L);var row='';for(var i=0;i<NSEM;i++){var disp=(i===0)?cc.caIni:cc.acum[i-1];tot[i]+=disp;row+='<td class="mono '+(disp<0?'neg':'')+'">'+fmtM(disp)+'</td>';}sow+='<tr><td class="l">'+L+'</td>'+row+'</tr>';});sow+='<tr class="fin"><td class="l">Total grupo</td>'+tot.map(function(v){return '<td class="mono '+(v<0?'neg':'pos')+'">'+fmtM(v)+'</td>';}).join('')+'</tr></tbody></table></div>';}
-  var t='<div class="sct">Movimiento semanal · '+scope+'</div><div class="scr"><table>'+cgroup+'<thead><tr><th class="l">$ M</th>'+ths+'</tr></thead><tbody>';
+  if(c.unit==='cons'){sow='<div class="sct">Disponible por sucursal · al inicio de cada semana (lunes)</div><div class="scr"><table class="wktab">'+cgroup+'<thead><tr><th class="l">Sucursal</th>'+ths+'</tr></thead><tbody>';var tot=Array(NSEM).fill(0);LOCALS.forEach(function(L){var cc=computeCash(L);var row='';for(var i=0;i<NSEM;i++){var disp=(i===0)?cc.caIni:cc.acum[i-1];tot[i]+=disp;row+='<td class="mono '+(disp<0?'neg':'')+'">'+fmtM(disp)+'</td>';}sow+='<tr><td class="l">'+L+'</td>'+row+'</tr>';});sow+='<tr class="fin"><td class="l">Total grupo</td>'+tot.map(function(v){return '<td class="mono '+(v<0?'neg':'pos')+'">'+fmtM(v)+'</td>';}).join('')+'</tr></tbody></table></div>';}
+  var t='<div class="sct">Movimiento semanal · '+scope+'</div><div class="scr"><table class="wktab">'+cgroup+'<thead><tr><th class="l">$ M</th>'+ths+'</tr></thead><tbody>';
   t+='<tr><td class="l">Disponible inicio sem.</td>'+c.acum.map(function(v,i){var d=(i===0)?c.caIni:c.acum[i-1];return '<td class="mono note '+(d<0?'neg':'')+'">'+fmtM(d)+'</td>';}).join('')+'</tr>';
   var _ce=+state.cash.cerradas||0;var _ingI=(state.cash.ingresos||[]).filter(function(l){return matchU(l,c.unit);}).map(function(l){var a=[];for(var _k=0;_k<NSEM;_k++){a.push((_k<_ce)?(+(l.real&&l.real[_k])||0):(+(l.est&&l.est[_k])||0));}return {label:((l.nombre||'Ingreso')+(c.unit==='cons'?(' \u00b7 '+(l.unidad||'')):'')),arr:a};});
   var _ingT=Array(NSEM).fill(0);_ingI.forEach(function(it){it.arr.forEach(function(v,i){_ingT[i]+=v;});});
@@ -753,7 +753,7 @@ function renderCashOut(){var out=document.getElementById('cashOut');if(!out)retu
   var nec='';
   if(!_def.length){nec='<div class="needbox pos"><div class="needhead">Necesidad financiera \u00b7 '+scope+'</div><div class="needbig">Sin fondeo</div><div class="needsub">Con un colch\u00f3n de '+fmtM(_col)+', la caja no perfora ese piso en el horizonte. Piso m\u00e1s bajo: '+fmtM(c.piso)+' en S'+(c.pisoIdx+1)+'.</div></div>';}
   else{var _peak=_col-c.piso,_first=_def[0];
-    var _ftab='<div class="scr"><table><thead><tr><th class="l">Semana</th>'+_def.map(function(i){return '<th>'+wLabel(c.w[i])+'</th>';}).join('')+'</tr></thead><tbody>';
+    var _ftab='<div class="scr"><table class="wktab"><thead><tr><th class="l">Semana</th>'+_def.map(function(i){return '<th>'+wLabel(c.w[i])+'</th>';}).join('')+'</tr></thead><tbody>';
     _ftab+='<tr><td class="l">Caja proyectada</td>'+_def.map(function(i){return '<td class="mono neg">'+fmtM(c.acum[i])+'</td>';}).join('')+'</tr>';
     _ftab+='<tr class="fin"><td class="l">Faltante</td>'+_def.map(function(i){return '<td class="mono neg">'+fmtM(_col-c.acum[i])+'</td>';}).join('')+'</tr></tbody></table></div>';
     nec='<div class="needbox neg"><div class="needhead">Necesidad financiera \u00b7 '+scope+'</div>'+
