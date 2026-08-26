@@ -5,7 +5,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐂</text></svg>">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Proyección de caja · Standard69 · 2º semestre 2026</title>
+<title>Iris · Standard69</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -181,6 +181,7 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
   .vnav button.on .vd{color:#CFE0F0}
   .hidden-view{display:none!important}
 .chipbtn{margin-left:10px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--soft);padding:5px 12px;border-radius:999px;cursor:pointer}
+.chipbtn.on{background:var(--blue);border-color:var(--blue);color:#fff}
 /* difiere el layout de las tarjetas fuera de pantalla: baja el INP al cambiar de solapa */
 .card{content-visibility:auto;contain-intrinsic-size:auto 320px}
 @media print{.card{content-visibility:visible!important;contain-intrinsic-size:none!important}}
@@ -202,7 +203,7 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
 <body>
 <div id="lockScreen">
   <div class="lockbox">
-    <div class="lockttl">Standard69 · Proyección de caja</div>
+    <div class="lockttl">Iris · Standard69</div>
     <p class="locksub">Información confidencial. Ingresá la clave para acceder.</p>
     <input type="password" id="lockPass" placeholder="Clave de acceso" autocomplete="off">
     <button class="btn" id="lockBtn">Entrar</button>
@@ -211,7 +212,7 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
 </div>
 <div class="hero"><div class="hero-in">
   <div class="eyebrow">Flujo de caja · Jul – Dic 2026</div>
-  <h1>Proyección de caja · Standard69</h1>
+  <h1>Iris <span style="font-weight:500;color:var(--soft);font-size:.62em">· Standard69</span></h1>
 </div></div>
 
 <div class="wrap">
@@ -770,7 +771,7 @@ function renderCashOut(){var out=document.getElementById('cashOut');if(!out)retu
     dev+='<p class="sub" style="margin-top:8px">Acumulado a la fecha: estimado '+fmtM(te)+' \u00b7 real '+fmtM(tr)+' \u00b7 desv\u00edo <b class="'+(td>=0?'pos':'neg')+'">'+(td>=0?'+':'')+fmtAR(td,1)+'%</b>. Ese '+(tr>=te?'excedente':'faltante')+' ya est\u00e1 corrido hacia adelante en el disponible de todas las semanas siguientes.</p>';}}
   var devEg='';if(_cer2>0){var _wkE=c.w.slice(0,_cer2);devEg='<div class="devfold" data-dfold="devE"><span class="car">'+(_oE?'\u25be':'\u25b8')+'</span>Egresos<span class="pill">'+(_oE?'ocultar':'ver')+'</span></div>';if(_oE){devEg+='<div class="scr"><table><thead><tr><th class="l">Egresos</th>'+_wkE.map(function(d){return '<th>'+wLabel(d)+'</th>';}).join('')+'</tr></thead><tbody>';devEg+='<tr><td class="l note">Estimado</td>'+c.egEstArr.slice(0,_cer2).map(function(v){return '<td class="mono note">'+fmtM(v)+'</td>';}).join('')+'</tr>';devEg+='<tr><td class="l">Real</td>'+_wkE.map(function(_x,i){return c.egEntered[i]?('<td class="mono">'+fmtM(c.egRealArr[i])+'</td>'):'<td class="mono" style="color:#C2C8CF">\u2014</td>';}).join('')+'</tr>';devEg+='<tr class="fin"><td class="l">Desv\u00edo</td>'+_wkE.map(function(_x,i){if(!c.egEntered[i])return '<td class="mono" style="color:#C2C8CF">\u2014</td>';var e=c.egEstArr[i],r=c.egRealArr[i];var d=e>0?(r/e-1)*100:0;return '<td class="mono '+(d<=0?'pos':'neg')+'">'+(d>=0?'+':'')+fmtAR(d,0)+'%</td>';}).join('')+'</tr></tbody></table></div>';var tee=0,tre=0,anyent=false;for(var _j2=0;_j2<_cer2;_j2++){if(c.egEntered[_j2]){tee+=c.egEstArr[_j2];tre+=c.egRealArr[_j2];anyent=true;}}if(anyent){var tde=tee>0?(tre/tee-1)*100:0;devEg+='<p class="sub" style="margin-top:8px">Acumulado (semanas con egreso real cargado): estimado '+fmtM(tee)+' \u00b7 real '+fmtM(tre)+' \u00b7 desv\u00edo <b class="'+(tde<=0?'pos':'neg')+'">'+(tde>=0?'+':'')+fmtAR(tde,1)+'%</b>. '+(tre<tee?'Pagaste menos de lo estimado: ese excedente queda en la caja y se arrastra hacia adelante.':(tre>tee?'Pagaste m\u00e1s de lo estimado: ese faltante descuenta la caja hacia adelante.':'Pagaste lo estimado.'))+'</p>';}else{devEg+='<p class="sub" style="margin-top:8px">Carg\u00e1 el egreso real por sucursal (en la secci\u00f3n de edici\u00f3n) para que la caja se corrija sobre el real y veas el desv\u00edo.</p>';}}devEg+='</div>';}out.innerHTML=tabs+kpis+sow+cashSvg(c)+t+dev+devEg+sch+nec;out.querySelectorAll('[data-dfold]').forEach(function(el){el.onclick=function(){var k=el.getAttribute('data-dfold');cashFold[k]=!cashFold[k];renderCashOut();};});
   out.querySelectorAll('[data-repdet]').forEach(function(el){el.onclick=function(){repDetalle(+el.getAttribute('data-repdet'),c);};});var _ph=document.getElementById('planHdr');if(_ph)_ph.onclick=function(){planOpen=!planOpen;var b=document.getElementById('planBody'),car=document.getElementById('planCar');if(b)b.style.display=planOpen?'block':'none';if(car)car.textContent=planOpen?'▾':'▸';};
-  out.querySelectorAll('#cashViewTabs button').forEach(function(b){b.onclick=function(){cashView=b.dataset.cu;renderCashOut();};});var bh=document.getElementById('btnHideCer');if(bh){bh.textContent=cashHideCer?'Mostrar cerradas':'Ocultar cerradas';bh.onclick=function(){cashHideCer=!cashHideCer;bh.textContent=cashHideCer?'Mostrar cerradas':'Ocultar cerradas';applyWkHide();};}
+  out.querySelectorAll('#cashViewTabs button').forEach(function(b){b.onclick=function(){cashView=b.dataset.cu;renderCashOut();};});var bh=document.getElementById('btnHideCer');if(bh){bh.textContent=cashHideCer?'Mostrar cerradas':'Ocultar cerradas';bh.classList.toggle('on',cashHideCer);bh.onclick=function(){cashHideCer=!cashHideCer;bh.textContent=cashHideCer?'Mostrar cerradas':'Ocultar cerradas';bh.classList.toggle('on',cashHideCer);applyWkHide();};}
   out.querySelectorAll('[data-grp]').forEach(function(tr){tr.onclick=function(){var k=tr.getAttribute('data-grp');cashExpand[k]=!cashExpand[k];renderCashOut();};});}
 function buildCash(){var ed=document.getElementById('cashEdit');if(!ed)return;ensureCash();var w=cashWeeks();var ths=w.map(function(d){return '<th>'+wLabel(d)+'</th>';}).join('');var h='';
 h+='<div class="row" style="gap:14px;margin-bottom:8px;flex-wrap:wrap"><div><label class="f">Semana 1 arranca</label><input type="date" data-dpath="cash.inicio" value="'+(state.cash.inicio||'')+'"></div><div><label class="f">Colchón mínimo $</label><span style="display:inline-block;width:130px">'+inp('cash.colchon',{dec:0})+'</span></div><div><label class="f">Semanas con real cargado</label><span style="display:inline-block;width:70px">'+inp('cash.cerradas',{dec:0})+'</span></div></div>';
