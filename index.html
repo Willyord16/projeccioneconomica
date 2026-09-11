@@ -1008,15 +1008,40 @@ function ciMesOk(m){
   if(m>=(+state.cerrados||0))return false;
   return LOCALS.some(function(L){return (+state.real[L].fact[m]||0)>0;});
 }
+function cmvSerie(L){
+  var hm=(state.histM&&state.histM[L])||{},ch=(state.cmvHist&&state.cmvHist[L])||[];
+  var f25=hm.f25||[],f26=hm.f26||[];
+  var y25=[],y26=[];
+  for(var i=0;i<12;i++){y25.push({f:+f25[i]||0,c:+ch[i]||0});}
+  for(var i=0;i<6;i++){y26.push({f:+f26[i]||0,c:+ch[12+i]||0});}
+  for(var i=0;i<6;i++){
+    var fr=(state.real&&state.real[L]&&+state.real[L].fact[i])||0;
+    var cr=(state.cmvReal&&state.cmvReal[L]&&+state.cmvReal[L][i])||0;
+    if(!fr&&f26[6+i]!=null)fr=+f26[6+i]||0;
+    y26.push({f:fr,c:cr});}
+  return {y25:y25,y26:y26};
+}
+function cmvMM(arr,mi,prev){
+  var cmv=0,v=0,n=0;
+  for(var i=mi-2;i<=mi;i++){
+    var d=(i<0)?((prev&&prev[12+i])||null):arr[i];
+    if(!d||!d.f||!d.c)continue;
+    cmv+=d.f*d.c/100;v+=d.f;n++;}
+  return (n>=2&&v>0)?(cmv/v*100):null;
+}
+function ciCmv(L,m,anio){
+  if(anio===25)return (+((state.cmvHist&&state.cmvHist[L])||[])[6+m]||0);
+  return (state.cmvReal&&state.cmvReal[L])?(+state.cmvReal[L][m]||0):0;
+}
 function ciDatos(L,m){
   var estF=projFact(scen,L,m);
   var estC=state.hist[L].cub[m]*(1+state.qDelta[scen][L]/100);
   var realF=+state.real[L].fact[m]||0, realC=+state.real[L].cub[m]||0;
   var cmvE=(+state.costos[L].cmv||0)+(+state.cmvStress[scen]||0);
-  var cmvR=(state.cmvReal&&state.cmvReal[L])?(+state.cmvReal[L][m]||0):0;
+  var cmvR=ciCmv(L,m,26)||0;
   var histF=+state.hist[L].fact[m]||0, histC=+state.hist[L].cub[m]||0;
   var iaF=histF*(1+(+state.inflacion[m]||0)/100);
-  var cmv25=0;try{var ch=state.cmvHist&&state.cmvHist[L];if(Array.isArray(ch))cmv25=+ch[6+m]||0;}catch(e){}
+  var cmv25=0;try{cmv25=ciCmv(L,m,25)||0;}catch(e){}
   return {L:L,estF:estF,estC:estC,realF:realF,realC:realC,cmvE:cmvE,cmvR:cmvR,histC:histC,iaF:iaF,cmv25:cmv25};
 }
 function ciPct(a,b){return (b>0)?((a/b-1)*100):null;}
@@ -1057,7 +1082,9 @@ function renderCierre(){
   var hh='<div class="ciKpis">';
   hh+=kpi('m','Facturaci\u00f3n \u00b7 est \u2192 real',fmtM(C.estF),fmtM(C.realF),(devF!=null?ciFm(devF)+' \u00b7 '+(C.realF-C.estF>=0?'+':'\u2212')+fmtM(Math.abs(C.realF-C.estF)):'\u2014'),devF>=0?'pos':'neg');
   hh+=kpi(devC>=0?'g':'w','Cubiertos \u00b7 est \u2192 real',fmtN(Math.round(C.estC)),fmtN(Math.round(C.realC)),(devC!=null?ciFm(devC)+' \u00b7 '+(C.realC-C.estC>=0?'sobraron ':'faltaron ')+fmtN(Math.round(Math.abs(C.realC-C.estC))):'\u2014'),devC>=0?'pos':'neg');
-  hh+=kpi(devP>=0?'g':'w','Cub. promedio \u00b7 est \u2192 real',fmtP(promE),fmtP(promR),(devP!=null?ciFm(devP)+' vs inflaci\u00f3n':'\u2014'),devP>=0?'pos':'neg');
+  hh+=kpi(devP>=0?'g':'w','Cub. promedio \u00b7 est \u2192 real',fmtP(promE),fmtP(promR),(devP!=null?ciFm(devP)+' vs estimado':'\u2014'),devP>=0?'pos':'neg');
+  var p25c=C.histC>0?C.iaF/C.histC:0,p26c=C.realC>0?C.realF/C.realC:0,devIA=ciPct(p26c,p25c);
+  hh+=kpi(devIA>=0?'g':'w','Cub. prom. \u00b7 2025 ajust. \u2192 real',fmtP(p25c),fmtP(p26c),(devIA!=null?ciFm(devIA)+' real vs '+MESES[m]+' 2025':'\u2014'),devIA>=0?'pos':'neg');
   hh+=C.cmvRok?kpi(C.mgSum>=0?'g':'w','CMV \u00b7 est \u2192 real',fmtAR(cmvEp,1)+'%',fmtAR(cmvRp,1)+'%',(cmvRp-cmvEp>=0?'+':'\u2212')+fmtAR(Math.abs(cmvRp-cmvEp),1)+' pp \u00b7 '+(C.mgSum>=0?'+':'\u2212')+fmtM(Math.abs(C.mgSum))+' margen',C.mgSum>=0?'pos':'neg')
     :kpi('w','CMV \u00b7 est \u2192 real',fmtAR(cmvEp,1)+'%','\u2014','falta CMV real del mes','neg');
   hh+='</div>';
@@ -1077,7 +1104,7 @@ function renderCierre(){
     b+=row('CMV',(d.cmvR>0?fmtAR(d.cmvR,1)+'%':'\u2014'),(d.cmvR>0?('est '+fmtAR(d.cmvE,1)+'% \u00b7 <b class="'+(mg>=0?'pos':'neg')+'">'+(mg>=0?'+':'\u2212')+fmtM(Math.abs(mg))+'</b>'):'falta cargar CMV real'));
     b+='<div class="ciIa"><div class="t">vs '+MESES[m]+' 2025</div>'+
        '<div class="rw mono"><span class="k">Cubiertos</span><span>'+fmtN(Math.round(d.histC))+' \u2192 '+fmtN(Math.round(d.realC))+' \u00b7 <b class="'+(iaC>=0?'pos':'neg')+'">'+(iaC!=null?ciFm(iaC):'\u2014')+'</b></span></div>'+
-       '<div class="rw mono"><span class="k">Fact. ajust. infl.</span><span>'+fmtM(d.iaF)+' \u2192 '+fmtM(d.realF)+' \u00b7 <b class="'+(iaFv>=0?'pos':'neg')+'">'+(iaFv!=null?ciFm(iaFv):'\u2014')+'</b></span></div>'+'<div class="rw mono"><span class="k">CMV</span><span>'+((d.cmv25>0&&d.cmvR>0)?(fmtAR(d.cmv25,1)+'% \u2192 '+fmtAR(d.cmvR,1)+'% \u00b7 <b class="'+((d.cmvR-d.cmv25)<=0?'pos':'neg')+'">'+((d.cmvR-d.cmv25)>=0?'+':'\u2212')+fmtAR(Math.abs(d.cmvR-d.cmv25),1)+' pp</b>'):'<span class="note">sin CMV 2025</span>')+'</span></div></div>';
+       '<div class="rw mono"><span class="k">Fact. ajust. infl.</span><span>'+fmtM(d.iaF)+' \u2192 '+fmtM(d.realF)+' \u00b7 <b class="'+(iaFv>=0?'pos':'neg')+'">'+(iaFv!=null?ciFm(iaFv):'\u2014')+'</b></span></div>'+(function(){var p25=(d.histC>0)?(d.iaF/d.histC):null,p26=(d.realC>0)?(d.realF/d.realC):null;var vp=(p25&&p26)?((p26/p25-1)*100):null;return '<div class="rw mono"><span class="k">Cub. prom. ajust.</span><span>'+(p25?fmtM(p25):'\u2014')+' \u2192 '+(p26?fmtM(p26):'\u2014')+' \u00b7 <b class="'+(vp>=0?'pos':'neg')+'">'+(vp!=null?ciFm(vp):'\u2014')+'</b></span></div>';})()+'<div class="rw mono"><span class="k">CMV</span><span>'+((d.cmv25>0&&d.cmvR>0)?(fmtAR(d.cmv25,1)+'% \u2192 '+fmtAR(d.cmvR,1)+'% \u00b7 <b class="'+((d.cmvR-d.cmv25)<=0?'pos':'neg')+'">'+((d.cmvR-d.cmv25)>=0?'+':'\u2212')+fmtAR(Math.abs(d.cmvR-d.cmv25),1)+' pp</b>'):'<span class="note">sin CMV 2025</span>')+'</span></div></div>';
     b+='</div></div>';return b;
   }).join('')+'</div>';
   // lectura por reglas
@@ -1339,12 +1366,30 @@ function cmvRecos(d){
   c.sort(function(a,b){return b.p-a.p;});
   return c.slice(0,3);
 }
+function cmvMMView(unit){
+  var out=[];
+  var LS=(unit==='cons')?LOCALS:[unit];
+  var S={};LS.forEach(function(L){S[L]=cmvSerie(L);});
+  for(var m=0;m<12;m++){
+    var hoy=false;
+    LS.forEach(function(L){var dd=S[L].y26[m];if(dd&&dd.f&&dd.c)hoy=true;});
+    if(!hoy){out.push(null);continue;}
+    var cmv=0,v=0,n=0;
+    for(var i=m-2;i<=m;i++){
+      if(i<0)continue;
+      LS.forEach(function(L){var dd=S[L].y26[i];if(!dd||!dd.f||!dd.c)return;cmv+=dd.f*dd.c/100;v+=dd.f;n++;});
+    }
+    out.push((n>=2&&v>0)?(cmv/v*100):null);
+  }
+  return out;
+}
 function renderCmvCompare(){
   var host=document.getElementById('cmvCompare');if(!host)return;
   var d=cmvYoY(cmvView);
   var anyReal=d.some(function(r){return r.hasReal;});
-  function draw(get25,get26,color){
+  function draw(get25,get26,color,mmArr){
     var vals=[];d.forEach(function(r){var a=get25(r),b=get26(r);if(a!=null)vals.push(a);if(b!=null)vals.push(b);});
+    if(mmArr)mmArr.forEach(function(x){if(x!=null)vals.push(x);});
     if(!vals.length)vals=[0,1];
     var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals),yMax=Math.ceil(mx+1.5),yMin=Math.floor(mn-1.5);if(yMax-yMin<4)yMax=yMin+4;
     var W=640,H=185,padL=38,padR=12,padT=19,padB=27,pw=W-padL-padR,ph=H-padT-padB,N=12;
@@ -1356,6 +1401,9 @@ function renderCmvCompare(){
     if(p)s+='<path d="'+p+'" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="5,4"/>';
     var q='';d.forEach(function(r,i){var b=get26(r);if(b!=null){q+=(q===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(b).toFixed(1)+' ';}});
     if(q)s+='<path d="'+q+'" fill="none" stroke="'+color+'" stroke-width="2.4"/>';
+    if(mmArr){var mp='';mmArr.forEach(function(x,i){if(x==null)return;mp+=(mp===''?'M':'L')+xOf(i).toFixed(1)+' '+yOf(x).toFixed(1)+' ';});
+      if(mp)s+='<path d="'+mp+'" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-dasharray="1,3" stroke-linecap="round" opacity="0.95"/>';
+      mmArr.forEach(function(x,i){if(x==null)return;s+='<circle cx="'+xOf(i).toFixed(1)+'" cy="'+yOf(x).toFixed(1)+'" r="2" fill="var(--blue)"><title>media m\u00f3vil 3M: '+fmtAR(x,1)+'%</title></circle>';});}
     d.forEach(function(r,i){var a=get25(r),b=get26(r),cx=xOf(i);
       if(a!=null){var ay=yOf(a);var up=(b==null)||(a>=b);s+='<circle cx="'+cx.toFixed(1)+'" cy="'+ay.toFixed(1)+'" r="2.4" fill="#8a8a8a"/><text x="'+cx.toFixed(1)+'" y="'+(up?ay-7:ay+13).toFixed(1)+'" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#8a8a8a">'+fmtAR(a,1)+'</text>';}
       if(b!=null){var by=yOf(b);var up2=(a==null)||(b>a);s+='<circle cx="'+cx.toFixed(1)+'" cy="'+by.toFixed(1)+'" r="3" fill="'+color+'"/><text x="'+cx.toFixed(1)+'" y="'+(up2?by-7:by+13).toFixed(1)+'" text-anchor="middle" font-size="8.5" font-family="IBM Plex Mono" fill="'+color+'">'+fmtAR(b,1)+'</text>';}});
@@ -1363,8 +1411,9 @@ function renderCmvCompare(){
     return s+'</svg>';
   }
   var margSvg=draw(function(r){return r.has25?100-r.y25:null;},function(r){return r.hasReal?100-r.y26:null;},'var(--green)');
-  var cmvSvg=draw(function(r){return r.has25?r.y25:null;},function(r){return r.hasReal?r.y26:null;},'var(--red)');
-  function leg(c){return '<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid '+c+'"></span>2026</span></div>';}
+  var mmArr=cmvMMView(cmvView);
+  var cmvSvg=draw(function(r){return r.has25?r.y25:null;},function(r){return r.hasReal?r.y26:null;},'var(--red)',mmArr);
+  function leg(c,mm){return '<div class="row" style="gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;color:var(--soft)"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dashed #8a8a8a"></span>2025</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px solid '+c+'"></span>2026 mensual</span>'+(mm?'<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;border-top:2px dotted var(--blue)"></span>media m\u00f3vil 3M</span>':'')+'</div>';}
   var TONE={pos:['var(--greenbg)','var(--green)'],neg:['var(--redbg)','var(--red)'],warn:['var(--amberbg)','var(--gold)'],info:['var(--bluebg)','var(--blue)']};
   var recos=cmvRecos(d),recoH='';
   if(recos.length){recoH='<div style="margin-top:14px"><div class="sct">Sugerencias seg\u00fan la situaci\u00f3n</div>';recos.forEach(function(r){var co=TONE[r.t]||TONE.info;recoH+='<div style="display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:'+co[0]+';margin-bottom:7px"><span style="color:'+co[1]+';font-size:13px;line-height:1.3">\u25CF</span><span style="font-size:12.5px;color:var(--text);line-height:1.45">'+r.x+'</span></div>';});recoH+='</div>';}
@@ -1372,7 +1421,7 @@ function renderCmvCompare(){
   d.forEach(function(r){tb+='<tr><td class="l">'+r.mes+'</td><td class="mono">'+(r.has25?fmtAR(r.y25,1)+'%':'\u2014')+'</td>'+(r.hasReal?('<td class="mono">'+fmtAR(r.y26,1)+'%</td><td class="mono '+(r.gap>0?'neg':'pos')+'">'+(r.gap>0?'+':'')+fmtAR(r.gap,1)+'pp</td><td class="mono">'+fmtAR(100-r.y26,1)+'%</td>'):'<td class="note">\u2014</td><td class="note">\u2014</td><td class="note">\u2014</td>')+'</tr>';});
   tb+='</tbody></table></div>';
   var nota=anyReal?'':'<div style="padding:9px 11px;border-radius:9px;background:var(--bluebg);font-size:12px;color:var(--blue);line-height:1.45;margin-bottom:8px">Carg\u00e1 el CMV % de 2026 en las grillas de arriba (1\u00ba sem ya disponible; 2\u00ba sem al cerrar cada mes) para ver las l\u00edneas de 2026 y las sugerencias.</div>';
-  host.innerHTML='<div class="sct">Margen bruto % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+nota+leg('var(--green)')+margSvg+'<div class="sct" style="margin-top:16px">CMV % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+leg('var(--red)')+cmvSvg+recoH+tb;
+  host.innerHTML='<div class="sct">Margen bruto % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+nota+leg('var(--green)')+margSvg+'<div class="sct" style="margin-top:16px">CMV % \u00b7 2026 vs 2025 (a\u00f1o completo)</div>'+'<p class="sub" style="margin:2px 0 4px">La media m\u00f3vil promedia 3 meses ponderando por facturaci\u00f3n: neutraliza el ruido de compras imputadas de un mes a otro.</p>'+leg('var(--red)',true)+cmvSvg+recoH+tb;
 }
 function buildDesvioView(){var el=document.getElementById("desvioViewTabs");if(!el)return;var opts=[["cons","Consolidado"]].concat(LOCALS.map(function(L){return [L,L];}));el.innerHTML=opts.map(function(o){return '<button data-dv="'+o[0]+'"'+(o[0]===desvioView?' class="on"':'')+'>'+o[1]+'</button>';}).join("");el.querySelectorAll("button").forEach(function(b){b.onclick=function(){desvioView=b.dataset.dv;el.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});renderOutputs();};});}
 function buildCorte(){buildCorteTabs();buildCorteView();buildCorteShare();buildCorteInputs();renderCorteOut();}
