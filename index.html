@@ -499,7 +499,9 @@ function econ(s,m,onlyL,useReal){
   LOCALS.forEach(function(L){
     if(onlyL&&L!==onlyL)return;
     const f=useReal?state.real[L].fact[m]:projFact(s,L,m);const c=state.costos[L];
-    ventas+=f;cmv+=f*(c.cmv+state.cmvStress[s])/100;reg+=f*c.reg/100;imp+=f*c.imp/100;mant+=f*c.mant/100;
+    var _cr=(useReal&&state.cmvReal&&state.cmvReal[L]&&+state.cmvReal[L][m]>0)?+state.cmvReal[L][m]:null;
+    var _cp=useReal?(_cr!=null?_cr:c.cmv):(c.cmv+state.cmvStress[s]);
+    ventas+=f;cmv+=f*_cp/100;reg+=f*c.reg/100;imp+=f*c.imp/100;mant+=f*c.mant/100;
     sueldos+=c.sueldos[m];alquiler+=c.alquiler[m];servicios+=c.servicios[m];
   });
   const fijos=sueldos+alquiler+servicios;
@@ -831,7 +833,7 @@ function renderOutputs(){
   const onlyL=view==='cons'?null:view;
   const serie=cajaSerie(scen,null,false);
   const cierre=serie[5].acum,acums=serie.map(x=>x.acum),piso=Math.min.apply(null,acums),pisoIdx=acums.indexOf(piso);
-  let resSem=0;for(let m=0;m<6;m++)resSem+=econ(scen,m,null,false).res;
+  let resSem=0;for(let m=0;m<6;m++)resSem+=econ(scen,m,null,m<state.cerrados).res;
   let vtos=0,cub=0;serie.forEach(x=>{if(x.vtoInv>0){vtos++;if(x.acum>=0)cub++;}});
   document.getElementById('kpis').innerHTML=
     '<div class="kpi"><div class="k">Caja al 31/12</div><div class="v '+(cierre>=0?'pos':'neg')+'">'+fmtM(cierre)+'</div><div class="d">cierre del semestre</div></div>'+
@@ -849,11 +851,11 @@ function renderOutputs(){
 
   const eL=[['Ventas (P×Q)','ventas',1],['− CMV','cmv',-1],['− Reg/Imp/Mant','varOtros',-1],['− Sueldos + CCSS','sueldos',-1],['− Alquiler','alquiler',-1],['− Servicios','servicios',-1],['− Intereses inversores','interes',-1],['− Intereses financiaciones','interesesFin',-1],['− Caución bursátil','caucion',-1]];
   let eb='';
-  eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,false)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
+  eL.forEach(function(r){let sem=0;const cells=MESES.map(function(_,m){const val=r[2]*econ(scen,m,onlyL,m<state.cerrados)[r[1]];sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');eb+='<tr><td class="l">'+r[0]+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
   (state.extraPL||[]).forEach(function(e){if(!e)return;if(onlyL&&e.unidad!==onlyL)return;var has=(e.vals||[]).some(function(v){return +v;});if(!e.nombre&&!has)return;var sg=(e.signo===1?1:-1);var sem=0;var cells=MESES.map(function(_,m){var val=sg*(+(e.vals&&e.vals[m])||0);sem+=val;return '<td class="mono '+(val<0?'neg':'')+'">'+fmtM(val)+'</td>';}).join('');var lbl=(sg<0?'\u2212 ':'+ ')+esc(e.nombre||'concepto')+((!onlyL&&e.unidad)?(' \u00b7 '+esc(e.unidad)):'');eb+='<tr><td class="l">'+lbl+'</td>'+cells+'<td class="mono '+(sem<0?'neg':'')+'">'+fmtM(sem)+'</td></tr>';});
-  let semRes=0,semVts=0;const rc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);semRes+=e.res;semVts+=e.ventas;return '<td class="mono '+(e.res<0?'neg':'pos')+'">'+fmtM(e.res)+'</td>';}).join('');
+  let semRes=0,semVts=0;const rc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,m<state.cerrados);semRes+=e.res;semVts+=e.ventas;return '<td class="mono '+(e.res<0?'neg':'pos')+'">'+fmtM(e.res)+'</td>';}).join('');
   eb+='<tr class="fin"><td class="l">Resultado</td>'+rc+'<td class="mono '+(semRes<0?'neg':'pos')+'">'+fmtM(semRes)+'</td></tr>';
-  const pc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,false);const p=e.ventas>0?e.res/e.ventas*100:0;return '<td class="mono '+(p<0?'neg':'pos')+'">'+fmtAR(p,1)+'%</td>';}).join('');
+  const pc=MESES.map(function(_,m){const e=econ(scen,m,onlyL,m<state.cerrados);const p=e.ventas>0?e.res/e.ventas*100:0;return '<td class="mono '+(p<0?'neg':'pos')+'">'+fmtAR(p,1)+'%</td>';}).join('');
   const semP=semVts>0?semRes/semVts*100:0;
   eb+='<tr><td class="l">Rentabilidad neta %</td>'+pc+'<td class="mono '+(semP<0?'neg':'pos')+'">'+fmtAR(semP,1)+'%</td></tr>';
   document.getElementById('econBody').innerHTML=eb;
@@ -1126,7 +1128,7 @@ function corteData(m,onlyL){
   });
   var interes=state.deuda.invInt[m]*state.fx[scen];
   var resProy=cierreV-cierreCMV-regimp-fijos-interes;
-  var e=econ(scen,m,onlyL,false);
+  var e=econ(scen,m,onlyL,m<state.cerrados);
   var budCmvPct=e.ventas>0?e.cmv/e.ventas*100:0;
   return {m:m,per:per,real15:real15,cmv15:cmv15,esp15:esp15,cierreV:cierreV,cierreCMV:cierreCMV,
     regimp:regimp,fijos:fijos,interes:interes,resProy:resProy,
