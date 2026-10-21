@@ -194,7 +194,7 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
   .lockbox{background:#fff;border-radius:16px;padding:28px 26px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
   .lockttl{font-family:'Spectral',serif;font-weight:600;font-size:19px;color:#16212B;margin-bottom:6px}
   .locksub{font-size:12.5px;color:#4A5763;margin:0 0 16px}
-  #lockPass{width:100%;border:1px solid #D9DFE6;border-radius:9px;padding:11px 12px;font-size:14px;margin-bottom:12px;font-family:'Inter';text-align:left;background:#fff;color:#16212B}
+  #lockPass,#lockUser{width:100%;border:1px solid #D9DFE6;border-radius:9px;padding:11px 12px;font-size:14px;margin-bottom:12px;font-family:'Inter';text-align:left;background:#fff;color:#16212B}
   #lockBtn{width:100%;display:flex;justify-content:center;padding:11px}
   #lockErr{display:none;color:#BE4733;font-size:12px;margin:10px 0 0;text-align:center}
   @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:25px}.vnav button{min-width:0;flex:1 1 40%;padding:9px 8px;font-size:12.5px}.vnav button .vd{display:none}.wrap{padding:0 10px 70px}.card{padding:13px;border-radius:12px}table td,table th{padding:5px 6px;font-size:11.5px}.ciKpis{grid-template-columns:1fr}.ciKpi .v{font-size:16px}.cierreChips{gap:4px}.cierrePdf{margin-left:0;width:100%;order:9}.chipbtn{margin-left:0;margin-top:6px}.tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}.tabs.sm button{white-space:nowrap}}
@@ -204,10 +204,11 @@ th.wkcl{background:#E4EDE1;border-radius:6px 6px 0 0}
 <div id="lockScreen">
   <div class="lockbox">
     <div class="lockttl">Iris · Standard69</div>
-    <p class="locksub">Información confidencial. Ingresá la clave para acceder.</p>
+    <p class="locksub">Información confidencial. Ingresá usuario y clave para acceder.</p>
+    <input type="text" id="lockUser" placeholder="Usuario" autocomplete="off" autocapitalize="none" spellcheck="false">
     <input type="password" id="lockPass" placeholder="Clave de acceso" autocomplete="off">
     <button class="btn" id="lockBtn">Entrar</button>
-    <p id="lockErr">Clave incorrecta</p>
+    <p id="lockErr">Usuario o clave incorrectos</p>
   </div>
 </div>
 <div class="hero"><div class="hero-in">
@@ -1887,12 +1888,16 @@ function initColapsables(){
     e.addEventListener('click',function(){e.classList.toggle('col');box.classList.toggle('col');});
   });
 }
-var CLAVE_ACCESO='std69';
+var USUARIO_ACCESO='capke';
+var CLAVE_ACCESO='bull2023';
 function unlock(){var ls=document.getElementById('lockScreen');if(ls)ls.style.display='none';if(!window.__booted){window.__booted=true;bootstrap();initColapsables();}}
-(function(){var b=document.getElementById('lockBtn'),p=document.getElementById('lockPass'),er=document.getElementById('lockErr');
- function tryUnlock(){if(p&&p.value===CLAVE_ACCESO){unlock();}else{if(er)er.style.display='block';if(p){p.value='';p.focus();}}}
+(function(){var b=document.getElementById('lockBtn'),u=document.getElementById('lockUser'),p=document.getElementById('lockPass'),er=document.getElementById('lockErr');
+ function tryUnlock(){var uo=u?u.value.trim().toLowerCase():'';
+  if(uo===USUARIO_ACCESO&&p&&p.value===CLAVE_ACCESO){unlock();}
+  else{if(er)er.style.display='block';if(p)p.value='';if(u&&uo!==USUARIO_ACCESO){u.focus();}else if(p){p.focus();}}}
  if(b)b.onclick=tryUnlock;
- if(p){p.addEventListener('keydown',function(e){if(e.key==='Enter')tryUnlock();});setTimeout(function(){try{p.focus();}catch(e){}},120);}
+ [u,p].forEach(function(el){if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')tryUnlock();});});
+ if(u){setTimeout(function(){try{u.focus();}catch(e){}},120);}
 })();
 </script>
 </body>
